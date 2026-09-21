@@ -49,7 +49,7 @@ if ($profile.inheritsFrom) {
 	$parent = Get-Content $parentFile -Raw | ConvertFrom-Json
 }
 
-function Test-Rules($rules) {
+function Test-Rules($rules, [switch]$Library) {
 	if (-not $rules) { return $true }
 	$allowed = $false
 	foreach ($rule in $rules) {
@@ -58,8 +58,18 @@ function Test-Rules($rules) {
 			if ($rule.os.name -and $rule.os.name -ne 'windows') { $match = $false }
 			if ($rule.os.arch -and $rule.os.arch -ne 'x86') { $match = $false }
 		}
-		# Feature-gated entries (demo mode, custom resolution, quick play) never apply to this rig.
-		if ($rule.features) { $match = $false }
+		# A feature gate is treated differently depending on what it gates, and getting this wrong breaks a
+		# launch in one of two opposite ways:
+		#
+		#   - a LIBRARY entry behind a "features" rule must be INCLUDED. Excluding it silently removed
+		#     com.mojang:authlib from 1.20.2's classpath and the client died on
+		#     NoClassDefFoundError: com/mojang/authlib/minecraft/TelemetryPropertyContainer;
+		#   - a GAME ARGUMENT entry behind a "features" rule must be EXCLUDED. Including them appended
+		#     --quickPlaySingleplayer and --quickPlayMultiplayer (both empty), and 1.21.11 then refused to
+		#     start at all:
+		#       IllegalArgumentException: Only one quick play option can be specified
+		#       at net.minecraft.client.main.Main.method_71662
+		if ($rule.features -and -not $Library) { $match = $false }
 		if ($match) { $allowed = ($rule.action -eq 'allow') }
 	}
 	return $allowed
@@ -80,11 +90,49 @@ $libEntries = @()
 if ($parent) { $libEntries += $parent.libraries }
 $libEntries += $profile.libraries
 
+# --- libraries: download whatever the profile names but the cache does not have ---
+#
+# A real launcher does this, and without it a profile assembled from several sources can name a library that
+# was never downloaded. That failure is invisible in the log (the classpath simply has one entry fewer) and
+# surfaces as a NoClassDefFoundError from deep inside the game: 1.20.2's authlib was absent from the cache
+# and the client died on com/mojang/authlib/minecraft/TelemetryPropertyContainer with a 72-entry classpath
+# that looked complete.
+$downloaded = 0
+foreach ($lib in $libEntries) {
+	if ($lib.rules -and -not (Test-Rules $lib.rules -Library)) { continue }
+	if (-not $lib.name) { continue }
+
+	$parts = $lib.name -split ':'
+	if ($parts.Count -lt 3) { continue }
+
+	$groupPath = $parts[0] -replace '\.', '/'
+	$basePath = "$groupPath/$($parts[1])/$($parts[2])/$($parts[1])-$($parts[2])"
+	if ($parts.Count -gt 3) { $basePath = "$basePath-$($parts[3])" }
+	$jarPath = Join-Path $librariesDir "$($basePath -replace '/', '\').jar"
+
+	if (Test-Path $jarPath) { continue }
+
+	$url = $null
+	if ($lib.downloads -and $lib.downloads.artifact -and $lib.downloads.artifact.url) { $url = $lib.downloads.artifact.url }
+	if (-not $url -and $lib.url) { $url = "$($lib.url.TrimEnd('/'))/$basePath.jar" }
+	if (-not $url) { continue }
+
+	try {
+		New-Item -ItemType Directory -Force (Split-Path -Parent $jarPath) | Out-Null
+		Invoke-WebRequest -Uri $url -OutFile $jarPath -TimeoutSec 120 -ErrorAction Stop
+		$downloaded++
+	} catch {
+		Write-Host "  could not download $($lib.name): $_"
+	}
+}
+
+if ($downloaded -gt 0) { Write-Host "  downloaded $downloaded missing librar$(if ($downloaded -eq 1) { 'y' } else { 'ies' })" }
+
 $classpath = New-Object System.Collections.Generic.List[string]
 $nativesNeeded = New-Object System.Collections.Generic.List[object]
 $missing = New-Object System.Collections.Generic.List[string]
 foreach ($lib in $libEntries) {
-	if ($lib.rules -and -not (Test-Rules $lib.rules)) { continue }
+	if ($lib.rules -and -not (Test-Rules $lib.rules -Library)) { continue }
 	if (-not $lib.name) { continue }
 
 	$parts = $lib.name -split ':'

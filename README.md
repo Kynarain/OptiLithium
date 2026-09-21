@@ -107,30 +107,55 @@ unsupported rather than silently omitted. Both jars must match the release exact
 
 | Minecraft | Java | OptiFine build | Lithium build | State |
 |---|---|---|---|---|
-| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | |
-| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | |
-| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | |
+| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | ✅ verified live |
+| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | ✅ verified live |
+| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | ✅ verified live |
 | 1.20.3 | 17 | — | `lithium-fabric-mc1.20.3-0.12.1` | OptiFine ships no build |
-| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | |
+| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | ✅ verified live |
 | 1.20.5 | 21 | — | `lithium-fabric-mc1.20.5-0.12.5` | OptiFine ships no build |
-| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | |
-| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | `lithium-fabric-0.15.2+mc1.21.1` | |
+| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | ✅ verified live |
+| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | none usable (see below) | ⚠️ OptiLithium alone: verified live |
 | 1.21.1 | 21 | `OptiFine_1.21.1_HD_U_J1` | `lithium-fabric-0.15.4+mc1.21.1` | ✅ verified live |
 | 1.21.2 | 21 | — | `lithium-fabric-0.14.6+mc1.21.3` | OptiFine ships no build |
-| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | |
-| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | |
+| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | ✅ verified live |
+| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | ✅ verified live |
 | 1.21.5 | 21 | — | `lithium-fabric-0.16.3+mc1.21.5` | OptiFine ships no build |
-| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | |
-| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | |
-| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | |
-| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | |
-| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | |
+| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | ✅ verified live |
+| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | ✅ verified live |
+| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | ✅ verified live |
+| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | ✅ verified live |
+| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | ✅ verified live |
 | 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | ✅ verified live |
 | 26.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
 | 26.1.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
-| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | |
+| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | not built here yet — see below |
 
-`tools/matrix-report.md` holds the measured result of every row that could be launched.
+`tools/matrix-report.md` holds the measured result of every row that could be launched, produced by
+`tools/matrix.ps1` itself.
+
+### The two releases that are not green
+
+**1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9 and Lithium's newest
+build for the 1.21 family is `lithium-fabric-0.15.2+mc1.21.1` — a jar built for **1.21.1**. Its mixins are
+applied to the 1.21 client and one of them fails the class it targets:
+
+```
+Mixin transformation of net.minecraft.class_2614 failed
+Caused by: NoClassDefFoundError: Could not initialize class net.minecraft.class_2246
+```
+
+`class_2614` on 1.21 is `HopperBlockEntity`, which **OptiFine does not patch at all** — verified by looking
+for it in `.optilithium/<version>/Optifine.classes.gz`, where it is absent, so this is not a patched-class
+conflict. With Lithium removed from the same instance, OptiLithium + OptiFine alone reach the title screen on
+1.21. Since 1.21.1 works and 1.21 sits between 1.20.6 and 1.21.1, use one of those rather than 1.21.
+
+**26.1.2 needs a second build flavour.** This project builds the **obfuscated** line, where the fixer table
+addresses classes by intermediary id (`class_2586`). Minecraft 26.1 and newer ship **unobfuscated**: official
+names are runtime names, the intermediary artifact is the empty `0.0.0` placeholder, and Yarn publishes
+nothing for 26.1.2. So `-Pmc=26.1.2` fails in `build.gradle` by design ("No yarn build is listed for
+Minecraft 26.1.2"), and the fixer table that works there is the one that addresses the game by official path
+(`net/minecraft/world/level/block/entity/BlockEntity`) — the table OptiFabric's `26.x` branch carries.
+`docs/LINES.md` records what that second flavour has to change.
 
 ## Building from source
 

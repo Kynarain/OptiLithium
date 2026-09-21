@@ -32,6 +32,40 @@ param(
 	[switch]$Force
 )
 
+# A duplicate ASM on the classpath is fatal to Fabric Loader ("duplicate ASM classes found on classpath:
+# .../asm-9.6.jar!...ClassReader.class, .../asm-9.10.1.jar!...ClassReader.class"). The profiles that ship this
+# way carry two copies: an older ASM from the launcher's own Minecraft entry (9.3 on 1.21.3, 9.6 elsewhere)
+# and 9.10.1 from Fabric Loader. Loader ships 9.10.1 itself as a launch library, so every other copy is pure
+# redundancy - and the version to keep differs per release, which is why this drops all of them rather than
+# naming one.
+#
+# Declared here, at the TOP of the script, because PowerShell only knows a function after the line that
+# defines it has run. Defined further down it does not exist yet when the "profile already exists" branch
+# calls it, and the call fails with "The term 'Remove-DuplicateAsm' is not recognized" while the script
+# carries on and the duplicate survives.
+function Remove-DuplicateAsm([string]$jsonPath) {
+	if (-not (Test-Path $jsonPath)) { return }
+
+	$doc = Get-Content $jsonPath -Raw | ConvertFrom-Json
+	$kept = @()
+	$dropped = @()
+
+	foreach ($lib in $doc.libraries) {
+		if ($lib.name -match '^org\.ow2\.asm:asm:[\d.]+$' -and $lib.name -ne 'org.ow2.asm:asm:9.10.1') {
+			$dropped += $lib.name
+			continue
+		}
+
+		$kept += $lib
+	}
+
+	if ($dropped.Count -eq 0) { return }
+
+	$doc.libraries = $kept
+	$doc | ConvertTo-Json -Depth 40 | Set-Content $jsonPath -Encoding UTF8
+	Write-Host "  dropped duplicate ASM: $($dropped -join ', ')"
+}
+
 $ErrorActionPreference = 'Continue'
 $versionsDir = Join-Path $McRoot 'versions'
 $targetId = "$Version-Fabric-0.19.5"
@@ -60,6 +94,11 @@ function Get-VanillaProfile([string]$id) {
 
 if ((Test-Path (Join-Path $targetDir "$targetId.json")) -and -not $Force) {
 	Write-Host "  profile $targetId already exists"
+	# Still deduplicated, every time. The check above returns early for a profile that already exists, and a
+	# profile can carry two ASM jars without anyone noticing until the client refuses to start: the early
+	# return is what let 1.21.3 and 1.21.4 keep asm-9.3 / asm-9.6 next to asm-9.10.1 and fail with
+	# "duplicate ASM classes found on classpath" while every other release worked.
+	Remove-DuplicateAsm (Join-Path $targetDir "$targetId.json")
 	return
 }
 
@@ -160,7 +199,10 @@ if (Test-Path $InstallerJar) {
 	Write-Host "  the installer did not produce $installedId; falling back to cloning"
 }
 
-# --- fallback: clone the nearest existing profile ---
+# ---------------- fallback: clone the nearest existing profile ----------------
+#
+# Only reached when the Fabric installer is unavailable or could not produce its profile. Everything this
+# path does has to be derived by hand, and each line below was a separate failure at some point.
 $ErrorActionPreference = 'Stop'
 
 # Pick a source profile: an explicit one, or the profile of the release whose LIBRARY SET matches. Cloning
@@ -230,7 +272,11 @@ if ($json.PSObject.Properties.Name -contains 'inheritsFrom') { $json.PSObject.Pr
 # and 9.10.1 from Fabric Loader. Loader ships 9.10.1 itself as a launch library, so every other copy is pure
 # redundancy - and the version to keep differs per release, which is why this drops all of them rather than
 # naming one.
-#
+
+
+$json = Get-Content $sourceJson -Raw | ConvertFrom-Json
+$json.id = $targetId
+if ($json.PSObject.Properties.Name -contains 'inheritsFrom') { $json.PSObject.Properties.Remove('inheritsFrom') }
 # The INTERMEDIARY artifact is what makes or breaks a clone, and it is the one field that is not derived from
 # the client jar: cloning 1.20 from the 1.20.4 profile leaves "net.fabricmc:intermediary:1.20.4" in place, and
 # Fabric Loader then remaps a 1.20 client with 1.20.4's mappings. The failure is not a version-mismatch message
