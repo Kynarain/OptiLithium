@@ -191,6 +191,11 @@ public class OptifineFixer {
 		registerFix("net/minecraft/world/level/block/entity/BlockEntity",
 				new RestoreSuperConstructorFix("(Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V"));
 
+		// ...and the calls OptiFine's own code makes to the members that supertype provided are made harmless.
+		// They are null-guarded, so this skips the Forge-only block behind each one instead of letting it throw:
+		// without it the world loads and then logs a NoSuchMethodError per saved block entity and drops its NBT.
+		registerFix("net/minecraft/world/level/block/entity/BlockEntity", new NeutraliseCapabilityCallsFix("getCapabilities"));
+
 		// ...and the members that came with that supertype go back onto the class itself. Without this the world
 		// loads and then logs a NoSuchMethodError for every saved block entity whose NBT is read - 264 of them in
 		// one 1.21.11 session, each one a block entity whose data was dropped instead of loaded. See
@@ -371,6 +376,12 @@ public class OptifineFixer {
 		//1.21.11 with Lithium 0.21.4. RestoreSuperConstructorFix puts the game's own super() call back and
 		//carries OptiFine's added initialisation (gatherCapabilities) over as an epilogue.
 		registerFix("class_2586", new RestoreSuperConstructorFix("(Lnet/minecraft/class_2591;Lnet/minecraft/class_2338;Lnet/minecraft/class_2680;)V"));
+
+		// ...and the calls OptiFine's own code makes to the members that supertype provided are made harmless.
+		// They are null-guarded, so this skips the Forge-only block behind each one instead of letting it throw:
+		// without it the world loads and then logs a NoSuchMethodError per saved block entity (~200 per load)
+		// and drops that entity's NBT. See NeutraliseCapabilityCallsFix.
+		registerFix("class_2586", new NeutraliseCapabilityCallsFix("getCapabilities"));
 
 		// ...and the members that came with that supertype go back onto the class itself, so OptiFine's own code
 		// still resolves them. Without this the world loads on 1.21.11 and then logs a NoSuchMethodError for
