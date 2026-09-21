@@ -5,17 +5,17 @@
 # "<版本>+mc" 的写法。手改漏一处就会出现文档与产物对不上,所以只走这个脚本。
 #
 #   .\release\version.ps1                                  # 看:当前版本,以及三类递增各会变成什么
-#   .\release\version.ps1 -Line 1.21.x -Kind minor         # 1.1.0 -> 1.2.0(真正写入)
-#   .\release\version.ps1 -Line 1.21.x -Kind patch -DryRun # 1.1.0 -> 1.1.1,只看结果,不写文件
-#   .\release\version.ps1 -Line 1.21.x -Set 1.2.0-beta.1   # 直接指定(校验格式与优先级)
-#   .\release\version.ps1 -Line 1.21.x -Part               # 只打印当前版本号(给别的脚本用)
-#   .\release\version.ps1 -Line 1.21.x -RecordDigest       # 构建之后:把产物的字节数与 SHA-256 写回文档
+#   .\release\version.ps1 -Line main -Kind minor         # 1.1.0 -> 1.2.0(真正写入)
+#   .\release\version.ps1 -Line main -Kind patch -DryRun # 1.1.0 -> 1.1.1,只看结果,不写文件
+#   .\release\version.ps1 -Line main -Set 1.2.0-beta.1   # 直接指定(校验格式与优先级)
+#   .\release\version.ps1 -Line main -Part               # 只打印当前版本号(给别的脚本用)
+#   .\release\version.ps1 -Line main -RecordDigest       # 构建之后:把产物的字节数与 SHA-256 写回文档
 #
 # 一个 jar 对应一个 MC 版本,所以"只改了某一个 MC 版本的行为"时,只给那一个产物升版,不要连累其余九个:
 #
-#   .\release\version.ps1 -Line 1.21.x -Mc 1.21.11 -Kind patch   # 1.1.0+mc1.21.11 -> 1.1.1+mc1.21.11,其余不动
-#   .\release\version.ps1 -Line 1.21.x -Mc 1.21.11               # 看那个版本的当前值
-#   .\release\version.ps1 -Line 1.21.x -Mc 1.21.11 -RecordDigest # 那个产物的尺寸与 SHA-256
+#   .\release\version.ps1 -Line main -Mc 1.21.11 -Kind patch   # 1.1.0+mc1.21.11 -> 1.1.1+mc1.21.11,其余不动
+#   .\release\version.ps1 -Line main -Mc 1.21.11               # 看那个版本的当前值
+#   .\release\version.ps1 -Line main -Mc 1.21.11 -RecordDigest # 那个产物的尺寸与 SHA-256
 #
 # 逐 MC 版本的例外值记在 release\publish.ps1 的 $modVersions 里(发布脚本本来就要靠它取文件名),
 # 没有例外的版本仍用项目的 gradle.properties 基数。文档里只有 "<版本>+mc<MC>" 这一串被改写,
@@ -26,8 +26,8 @@
 # 新版本必须比当前版本**优先级更高**(§11),否则拒绝写入(要硬来加 -Force)。
 [CmdletBinding()]
 param(
-	# Which release line to version. This repository carries the 1.21.x line only.
-	[ValidateSet("1.21.x")]
+	# Which release line to version. This repository carries the obfuscated 1.20-1.21.11 line only; the 26.x line needs a separate build flavour (docs/LINES.md).
+	[ValidateSet("main")]
 	[string]$Line,
 	# Which part of the version to increment, per SemVer: major | minor | patch.
 	[ValidateSet("major", "minor", "patch")]
@@ -57,28 +57,27 @@ $semverRegex = '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[
 # Per line: the project directory (the repository root is the Gradle project now), the artifact prefix that
 # names its jars, and the document files that carry "<version>+mc" strings.
 $lines = @{
-	"1.21.x" = @{
+	"main" = @{
 		project  = "."
-		artifact = "OptiFabric"
-		mc       = "1.21.11"
+		artifact = "OptiLithium"
+		mc       = "1.21.1"
 	}
 }
 
 $documentFiles = @(
 	"README.md",
-	"README_CN.md",
 	"CHANGELOG.md",
-	"docs/DESCRIPTION.md",
+	"docs/COMPAT_LITHIUM.md",
 	"docs/PUBLISHING.md",
 	"release/MANUAL_RELEASE.md",
-	"release/notes/mc1.21.x.md",
+	"release/notes-1.21.x-line/mc1.21.11.md",
 	"docs/RELEASE_NOTES.md",
 	"dist/README.txt"
 )
 # Every per-release note file belongs here too: each one carries its own "<version>+mc<mc>" strings, and a bump
 # that misses them leaves the release page for that Minecraft version describing an older jar. Globbed rather than
 # listed, so adding a release note cannot forget this.
-$documentFiles += @(Get-ChildItem (Join-Path $root "release/notes") -Filter "mc*.md" | ForEach-Object { "release/notes/" + $_.Name })
+$documentFiles += @(Get-ChildItem (Join-Path $root "release/notes-1.21.x-line") -Filter "mc*.md" | ForEach-Object { "release/notes/" + $_.Name })
 $documentFiles = @($documentFiles | Select-Object -Unique)
 # docs/VERSIONING.md is deliberately absent: its version numbers are examples of the rules, not statements about
 # the current release, so a bump must not rewrite them.
@@ -290,10 +289,10 @@ function Get-BuiltJar([string]$line, [string]$version, [string]$mc) {
 
 # -Part is meant to be consumed by other scripts: with a single line in this repository it defaults to it,
 # so plain `.\release\version.ps1 -Part` prints that line's version and nothing else.
-if (-not $Line -and $Part) { $Line = "1.21.x" }
+if (-not $Line -and $Part) { $Line = "main" }
 
 if (-not $Line -and -not $RecordDigest) {
-	foreach ($name in @("1.21.x")) {
+	foreach ($name in @("main")) {
 		$current = Get-CurrentVersion $name
 		$parsed = Parse-Version $current
 		Write-Host ("{0,-8} 当前 {1,-10} 产物 {2}-{1}+mc{3}.jar" -f $name, $current, $lines[$name].artifact, $lines[$name].mc)
@@ -461,7 +460,7 @@ if ($Mc) {
 }
 
 # 3. every "<version>+mc" reference in the documents. Matching on the bare version covers both the artifact
-#    names (OptiFabric-<version>+mc<mc>.jar) and the version fields of the release checklists. With -Mc
+#    names (OptiLithium-<version>+mc<mc>.jar) and the version fields of the release checklists. With -Mc
 #    the string carries the Minecraft version too, so no other jar's references (or history) can be caught. The
 #    lookbehind keeps names where this version sits inside a *different*, frozen artifact (see Update-FilePattern).
 $from = if ($Mc) { "$current+mc$Mc" } else { "$current+mc" }
