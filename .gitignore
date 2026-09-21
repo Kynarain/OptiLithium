@@ -41,5 +41,8 @@ dist/
 build-log.txt
 *.log
 
-# release/publish.ps1 生成的提交载荷,只是留档用
+# release/publish.ps1 鐢熸垚鐨勬彁浜よ浇鑽?鍙槸鐣欐。鐢?
 release/tmp/
+
+# Compiled helper tools (tools/*.java are the source)
+tools/*.class
