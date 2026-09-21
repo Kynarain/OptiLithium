@@ -82,6 +82,7 @@ $libEntries += $profile.libraries
 
 $classpath = New-Object System.Collections.Generic.List[string]
 $nativesNeeded = New-Object System.Collections.Generic.List[object]
+$missing = New-Object System.Collections.Generic.List[string]
 foreach ($lib in $libEntries) {
 	if ($lib.rules -and -not (Test-Rules $lib.rules)) { continue }
 	if (-not $lib.name) { continue }
@@ -101,7 +102,13 @@ foreach ($lib in $libEntries) {
 		$classpath.Add($jarPath)
 	} elseif ($lib.downloads -and $lib.downloads.artifact -and $lib.downloads.artifact.path) {
 		$alt = Join-Path $librariesDir ($lib.downloads.artifact.path -replace '/', '\')
-		if (Test-Path $alt) { $classpath.Add($alt) }
+		if (Test-Path $alt) { $classpath.Add($alt) } else { $missing.Add("$($lib.name) -> $alt") }
+	} else {
+		# Reported rather than skipped silently: a profile assembled from a mix of sources can name a library
+		# whose path field is absent AND whose jar is not in the cache, and that shows up only as
+		# "ClassNotFoundException: net.fabricmc.loader.impl.launch.knot.KnotClient" from the JVM - the mod
+		# loader's own class goes missing without naming the library that carried it.
+		$missing.Add("$($lib.name) -> $jarPath")
 	}
 
 	# Native classifier jars are unpacked next to the profile in a real install; collect what exists.
@@ -230,6 +237,10 @@ Write-Host "  java     : $javaExe"
 Write-Host "  game dir : $GameDir"
 Write-Host "  mods     : $((Get-ChildItem (Join-Path $GameDir 'mods') -File -ErrorAction SilentlyContinue).Name -join ', ')"
 Write-Host "  classpath: $($classpath.Count) entries"
+if ($missing.Count -gt 0) {
+	Write-Host "  MISSING $($missing.Count) librar$(if ($missing.Count -eq 1) { 'y' } else { 'ies' }) - the client will not start:"
+	$missing | Select-Object -First 10 | ForEach-Object { Write-Host "    $_" }
+}
 
 $stdout = Join-Path $GameDir 'rig-stdout.log'
 $stderr = Join-Path $GameDir 'rig-stderr.log'
@@ -274,7 +285,17 @@ Remove-Item $stdout, $stderr -ErrorAction SilentlyContinue
 #     itself redirects its stdout to that same file. Reproduced on 1.21.4, 1.21.3, 1.21.6 and 1.20.
 # Nothing is lost by detaching: the game's own log carries the mod output, and the launcher-phase lines are
 # captured by the '>' redirects in the command line itself.
-$command = '"' + $javaExe + '" @' + $argFile + ' >"' + $stdout + '" 2>"' + $stderr + '"'
+# The command line goes through cmd.exe, because '>' and '2>' are cmd's redirection and WMI's Create does not
+# interpret them. Without the cmd wrapper the JVM receives '>C:\...\rig-stdout.log' as a literal argument,
+# starts (a pid is returned), writes neither file and dies with no output at all - which is exactly what a
+# 1.20 run did before the wrapper was added. cmd itself is only a launcher here: it exits immediately and the
+# client keeps running with no relation to the harness process tree.
+#
+# The java path is quoted with PLAIN quotes and the whole command with /s-style outer quotes. Backslash-escaping
+# the inner quotes the way the JVM's own argfile format does makes cmd treat them as literal characters and
+# answer '\"C:\Program Files\Java\jdk-17\bin\java.exe\"' is not recognized as an internal or external command.
+$inner = '"' + $javaExe + '" @"' + $argFile + '"'
+$command = 'cmd.exe /d /s /c "' + $inner + ' >"' + $stdout + '" 2>"' + $stderr + '""'
 $created = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{
 	CommandLine = $command
 	CurrentDirectory = $GameDir
