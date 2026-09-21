@@ -105,30 +105,38 @@ OptiFine publishes a build for most of these releases; where it publishes none, 
 unsupported rather than silently omitted. Both jars must match the release exactly — `OptifineVersion` reads
 `MC_VERSION` out of `optifine/Config` and refuses to start on a mismatch.
 
+> **⚠️ Actual state: only 1.21.11 works, and it has one defect.** The "verified live" marks below came from a
+> **title-screen** pass, which proved much less than it looked like. Measured properly, every release from 1.20
+> to 1.21.10 fails at the title screen with `Mixin transformation of net.minecraft.class_2586 failed`, and only
+> 1.21.11 gets into a world (54 shader programs compiled) — where it drops NBT for saved block entities.
+> The earlier marks were wrong because the reader could find markers in **stale logs**: `-Fresh` cannot delete
+> a game directory a running JVM holds open, so a run that crashed reused the previous run's log.
+> Full measurement and both harness bugs: [`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md).
+
 | Minecraft | Java | OptiFine build | Lithium build | State |
 |---|---|---|---|---|
-| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | ✅ verified live |
-| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | ✅ verified live |
-| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | ✅ verified live |
+| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | title screen only |
+| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | title screen only |
+| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | title screen only |
 | 1.20.3 | 17 | — | `lithium-fabric-mc1.20.3-0.12.1` | OptiFine ships no build |
-| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | ✅ verified live |
+| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | title screen only |
 | 1.20.5 | 21 | — | `lithium-fabric-mc1.20.5-0.12.5` | OptiFine ships no build |
-| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | ✅ verified live |
-| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | none usable (see below) | ⚠️ OptiLithium alone: verified live |
-| 1.21.1 | 21 | `OptiFine_1.21.1_HD_U_J1` | `lithium-fabric-0.15.4+mc1.21.1` | ✅ verified live |
+| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | title screen only |
+| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | none usable (see below) | title screen only |
+| 1.21.1 | 21 | `OptiFine_1.21.1_HD_U_J1` | `lithium-fabric-0.15.4+mc1.21.1` | title screen only |
 | 1.21.2 | 21 | — | `lithium-fabric-0.14.6+mc1.21.3` | OptiFine ships no build |
-| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | ✅ verified live |
-| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | ✅ verified live |
+| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | title screen only |
+| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | title screen only |
 | 1.21.5 | 21 | — | `lithium-fabric-0.16.3+mc1.21.5` | OptiFine ships no build |
-| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | ✅ verified live |
-| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | ✅ verified live |
-| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | ✅ verified live |
-| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | ✅ verified live |
-| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | ✅ verified live |
-| 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | ✅ verified live |
+| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | title screen only |
+| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | title screen only |
+| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | title screen only |
+| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | title screen only |
+| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | title screen only |
+| 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | **loads a world** (one defect) |
 | 26.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
 | 26.1.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
-| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | ✅ verified live |
+| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | title screen only |
 
 `tools/matrix-report.md` holds the measured result of every row that could be launched, produced by
 `tools/matrix.ps1` itself. **15 of the 16 supported releases are green**: the title screen is reached with

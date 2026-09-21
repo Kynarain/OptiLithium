@@ -45,12 +45,15 @@ package kynarain.cn.optilithium.patcher.fixes;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.fabricmc.loader.impl.launch.FabricLauncherBase;
+
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.InsnNode;
@@ -277,7 +280,33 @@ public class RestoreSuperConstructorFix implements ClassFixer {
 		return "o:" + insn.getOpcode();
 	}
 
-	/** The first invokespecial &lt;init&gt; in the method, which is the super() or this() call. */
+	/**
+	 * A class of the game, read from the launcher. Null when it cannot be read, which makes the caller treat
+	 * the member as not provided rather than guessing. The shared reader does the same job and caches, but this
+	 * fixer needs the full method list including code, so it keeps its own read.
+	 *
+	 * <p>Note what this fixer does NOT do: it does not try to work out whether removing the supertype orphans
+	 * anything. That was tried as a guard and was wrong in both directions - it fired on the supertype's own
+	 * constructor call and disabled the repair on every release. Putting the inherited members back is
+	 * {@link ReExposeInheritedMembersFix}'s job, and it runs after this one.</p>
+	 */
+	private static ClassNode gameClass(String internalName) {
+		try {
+			byte[] bytes = FabricLauncherBase.getLauncher().getClassByteArray(internalName.replace('/', '.'), false);
+
+			if (bytes == null) return null;
+
+			ClassNode node = new ClassNode();
+			new ClassReader(bytes).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+
+			return node;
+		} catch (Throwable t) {
+			return null;
+		}
+	}
+
+	/**
+	 * The first invokespecial &lt;init&gt; in the method, which is the super() or this() call. */
 	private static MethodInsnNode superCall(MethodNode method) {
 		for (AbstractInsnNode insn : method.instructions.toArray()) {
 			if (insn instanceof MethodInsnNode call && call.getOpcode() == Opcodes.INVOKESPECIAL

@@ -41,7 +41,7 @@ dist/
 build-log.txt
 *.log
 
-# release/publish.ps1 闂佹眹鍨婚崰鎰板垂濮樿埖鍎嶉柛鏇ㄥ墮缁茬懓霉濠у灝鈧稑霉閸ヮ剚鍤?闂佸憡鐟禍婵單ｉ幖浣瑰仼婵炲棙鍔戦埀顒€鍊块幃?
+# release/publish.ps1 闂備焦鐪归崹濠氬窗閹版澘鍨傛慨妯垮煐閸庡秹鏌涢弴銊ュ缂佽尙鎳撻湁婵犙冪仢閳ь剚绋戦湁闁搞儺鍓氶崵?闂備礁鎲￠悷顖涚濠靛柈锝夊箹娴ｇ懓浠煎┑鐐叉閸旀垿鍩€椤掆偓閸婂潡骞?
 release/tmp/
 
 # Compiled helper tools (tools/*.java are the source)
@@ -57,3 +57,7 @@ config/
 # The matrix report IS committed: tools/matrix.ps1 regenerates it, and it is the record of
 # which releases were actually launched with both mods.
 !tools/matrix-report.md
+
+# The in-world rig's game directories: worlds, shader packs and the OptiFine jar the user supplied.
+# Never source - and the shader packs are third-party downloads.
+test/world/
