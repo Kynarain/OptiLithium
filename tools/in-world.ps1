@@ -18,7 +18,9 @@ param(
 	[string]$ShaderPackName = "ComplementaryReimagined_r5.9.3.zip",
 	[string]$Scratch = "C:\Users\kynar\IdeaProjects\scratch",
 	[int]$Seconds = 320,
-	[switch]$NoShader
+	[switch]$NoShader,
+	# Extra JVM properties, e.g. an experiment switch on the fixers.
+	[string[]]$ExtraJvm = @()
 )
 
 $ErrorActionPreference = 'Continue'
@@ -110,8 +112,10 @@ Get-CimInstance Win32_Process -Filter "Name='java.exe'" |
 Start-Sleep 2
 
 $mods = @($built, $OptiFineJar, $LithiumJar) -join "','"
+# Extra JVM properties are passed through so an experiment switch can be flipped without rebuilding the jar.
+$jvmArgs = if ($ExtraJvm.Count) { " -ExtraJvm '" + ($ExtraJvm -join "','") + "'" } else { "" }
 $cmd = "& { . '$testDir\run-version.ps1' -VersionId '$Version-Fabric-0.19.5' -GameDir '$gameDir'" +
-	" -Seconds $Seconds -Detach -JavaHome '$gameJavaHome' -QuickPlayWorld 'RigWorld' -Mods '$mods' }"
+	" -Seconds $Seconds -Detach -JavaHome '$gameJavaHome' -QuickPlayWorld 'RigWorld' -Mods '$mods'$jvmArgs }"
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $cmd *> (Join-Path $gameDir 'launch.log')
 
 # Poll for the outcome rather than sleeping the whole budget: a crash shows up in a few seconds, a world load

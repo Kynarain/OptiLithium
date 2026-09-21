@@ -75,6 +75,20 @@ public class RestoreSuperConstructorFix implements ClassFixer {
 	public void fix(ClassNode optifine, ClassNode minecraft) {
 		if (minecraft == null) return;
 
+		// -Doptilithium.skipSuperConstructorFix=<internal name> leaves this class exactly as OptiFine left it.
+		//
+		// This exists as an EXPERIMENT SWITCH, not as a feature. The repair fixes one thing (Mixin's
+		// delegate-constructor lookup for Lithium's BlockEntityMixin) and breaks another (the capability
+		// members OptiFine's recompiled code inherits from the supertype it removes), so the only way to know
+		// which side a release actually needs is to run it both ways. See docs/IN_WORLD_VERIFICATION.md.
+		String skip = System.getProperty("optilithium.skipSuperConstructorFix");
+
+		if (skip != null && (skip.equals(optifine.name) || skip.equals(optifine.name.replace('/', '.')))) {
+			System.out.println("[OptiLithium] " + optifine.name + ": supertype repair SKIPPED on request"
+					+ " (-Doptilithium.skipSuperConstructorFix), so the class is OptiFine's own");
+			return;
+		}
+
 		MethodNode vanilla = find(minecraft, "<init>", constructorDesc);
 		MethodNode patched = find(optifine, "<init>", constructorDesc);
 
