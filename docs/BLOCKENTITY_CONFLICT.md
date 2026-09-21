@@ -59,27 +59,47 @@ Two things follow, and both were confirmed by experiment:
 
 There is no arrangement in which both hold while the supertype is the thing being changed.
 
-## The finding that narrows it to one thing
+## The precise reason no delegate can exist — and it is not what it first looked like
 
-Tracing Mixin's rule against the actual bytecode shows **which half of the `&&` fails**, and it is not the
-owner comparison:
+Two things were read out of `sponge-mixin-0.17.4`'s bytecode for this, and the first one corrects an earlier
+guess in this file.
 
-- `targetName` is `net/minecraft/class_2586` and `targetSuperName` is `ClassInfo.getSuperName()`, which for
-  this class is the Forge supertype — so an owner test against the patched constructor's super() call would
-  **match**;
-- what fails is `newCount > 0`. `BlockEntity`'s constructor contains no `NEW` at all, and it cannot: the first
-  `NEW` in any correctly compiled constructor comes after the super() call, whereas the scan would need it
-  before. There is no super() call in valid class-file bytecode that has a `NEW` ahead of it on the same
-  path — such a constructor could not be written in Java or produced by javac.
+**First: this is not a supertype-name mismatch.** The 1.20.1 patched class does not extend what 26.1.2 does:
 
-So the condition Mixin imposes here cannot be satisfied by any rearrangement of `BlockEntity`'s own
-constructor. That is why experiments 1 and 2 both failed with no change: neither could change `newCount`.
-`ClassInfo.getSuperName()` is read from the class node Mixin was given, so the Forge name is what Mixin sees,
-and the `NEW` requirement is unsatisfiable regardless.
+```
+1.20.1:  class_2586 extends CapabilityProvider<class_2586> implements IForgeBlockEntity
+26.1.2:  class_2586 extends CapabilityProvider$BlockEntities implements IForgeBlockEntity, class_12023
+```
 
-This is worth stating plainly because it removes a whole family of attempted fixes: nothing done to
-`BlockEntity`'s constructor, its supertype, or the order of its instructions can make this lookup succeed.
-The delegate has to be found somewhere the scan can see a `NEW`, or the injection must not be looked up at all.
+and on 1.20.1 its super() call is `invokespecial CapabilityProvider.<init>(Ljava/lang/Class;)V` — a different
+owner *and* a different descriptor from the 26.1.2 shape. So an owner comparison against `targetSuperName`
+never matched on that release, which is a version-specific difference and not the general cause.
+
+**Second, and general: `newCount` can never be negative, so the condition is unsatisfiable by any constructor.**
+`Bytecode.findDelegateInit` keeps a counter that goes **up on `NEW`** and **down on `invokespecial <init>`**,
+and a candidate super call is only accepted when the counter is **already below zero**:
+
+```
+113: iload_3          # newCount
+114: ifle 123         # if (newCount <= 0) goto candidate-check
+117: iinc 3, -1       # else newCount--;        -> the call is an inner `new` being consumed
+120: goto 163
+123: ... candidate test: owner == targetName || owner == targetSuperName
+```
+
+The counter therefore tracks how many `NEW`s are in flight and *cancels out* each `new`'s constructor call. A
+match needs a constructor call with **no pending `NEW`** — which is exactly what a `super()` call is — but the
+counter only reaches that state after it has first been driven positive and then back to zero, i.e. after a
+complete `new … <init>` pair has already appeared in the method **before** the super call. No constructor can
+contain that: in every correctly compiled constructor the super() call is the first thing after the field
+initialisers, before any `NEW`.
+
+Which is why experiments 1 and 2 both changed nothing — neither could affect the counter — and why no edit to
+`BlockEntity`'s constructor, supertype, or instruction order can make this lookup succeed.
+
+**Nothing was left to test on this axis.** The only remaining directions are those that stop the lookup from
+happening (the injection is not applied to this class), or that change where the scan is pointed — the latter
+would mean influencing Mixin's own choice of target method, which this mod has no supported way to do.
 
 ## What is left to try
 
