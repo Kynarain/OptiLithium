@@ -14,6 +14,7 @@ param(
 	[int]$MemoryMb = 2048,
 	[string[]]$ExtraJvm = @(),
 	[string[]]$ExtraGameArgs = @(),
+	[string]$QuickPlayWorld = "",
 	[switch]$Fresh,
 	[switch]$KeepRunning,
 	[switch]$Detach,
@@ -30,6 +31,7 @@ New-Item -ItemType Directory -Force $GameDir | Out-Null
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
 & (Join-Path $here 'launch.ps1') -VersionId $VersionId -GameDir $GameDir -Seconds $Seconds -Mods $Mods `
 	-JavaHome $JavaHome -MemoryMb $MemoryMb -ExtraJvm $ExtraJvm -ExtraGameArgs $ExtraGameArgs `
+	-QuickPlayWorld $QuickPlayWorld `
 	-Fresh:$Fresh -KeepRunning:$KeepRunning -Detach:$Detach 2>&1 | Tee-Object -FilePath $LogFile
 $sw.Stop()
 

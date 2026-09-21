@@ -134,6 +134,13 @@ unsupported rather than silently omitted. Both jars must match the release exact
 `tools/matrix.ps1` itself. **15 of the 16 supported releases are green**: the title screen is reached with
 Lithium loaded and 0 failed patched classes.
 
+That matrix stops at the title screen, which is not the same as the mod working — chunk rebuild, block entity
+ticking and shader compilation all happen **after** a world loads. The deeper run is recorded in
+[`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md): Minecraft 1.21.11 with OptiFine, Lithium
+**and Fabric API**, a real world loaded through `--quickPlaySingleplayer` (`Starting integrated minecraft
+server`, `Preparing spawn area`), and a shader pack whose **54 programs compiled** with no shader errors and
+no crash.
+
 ### The one release that is not green
 
 **1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9, and Lithium's newest

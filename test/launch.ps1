@@ -22,6 +22,10 @@ param(
 	[int]$MemoryMb = 2048,
 	[string[]]$ExtraJvm = @(),
 	[string[]]$ExtraGameArgs = @(),
+	# Load this world (a directory name under <game dir>\saves) instead of stopping at the title screen. A name
+	# that does not exist yet makes the client create that world, which is how a run gets past the title screen
+	# without a launcher GUI.
+	[string]$QuickPlayWorld = "",
 	[switch]$Fresh,
 	[switch]$KeepRunning,
 	# Start the JVM and return immediately instead of waiting for it. See the note at the launch site.
@@ -274,6 +278,19 @@ foreach ($a in $ExtraJvm) { $finalArgs.Add($a) }
 $finalArgs.Add($mainClass)
 foreach ($a in $gameArgs) { $finalArgs.Add((Substitute $a)) }
 foreach ($a in $ExtraGameArgs) { $finalArgs.Add($a) }
+
+# --- optional: load a world instead of stopping at the title screen ---
+#
+# Passing -QuickPlayWorld <name> appends --quickPlaySingleplayer=<name>, which is what makes this rig able to
+# test past the title screen at all: without it the only thing a run proves is that the mod list resolved and
+# the pipeline ran, and the failures that matter for a rendering mod (chunk rebuild, block entity ticking,
+# shader compilation) all happen after a world is loaded.
+#
+# The single-token '=' form is the one the client parses; a space-separated pair is reported under
+# "Completely ignored arguments" and the game then sits on the title screen while the run looks successful.
+if ($QuickPlayWorld) {
+	$finalArgs.Add("--quickPlaySingleplayer=$QuickPlayWorld")
+}
 
 # --- run ---
 $crashDir = Join-Path $GameDir 'crash-reports'
