@@ -127,6 +127,20 @@ The world loads and the game runs with no crash and no error, but OptiFine repor
 `shaderpacks/`, selected in `optionsshaders.txt`, and visible to the module system. The 1.21.8 and 1.21.10
 releases — on either side of it, and running the same OptiFine shader code — both load it. Recorded as a gap.
 
+What has been ruled out, so a next attempt does not redo it:
+
+- **not the pack**: selecting OptiFine's own built-in pack (`shaderPack=internal`) reports the same
+  `No shaderpack loaded.`, so nothing about the Complementary archive is involved;
+- **not the config file**: `tools/ShaderConfigProbe.java` reads `optionsshaders.txt` the way OptiFine does — seed
+  the default, `Properties.load()` over it, read back — and gets the pack name correctly, at the right length;
+- **not the patcher**: the same jar, the same OptiFine build and the same config load the pack on 1.21.8 and
+  1.21.10, and the `multiTex` fixer reports the expected `class_10868`-based `MultiTexID` constructor on all
+  three;
+- **where it fails**: in OptiFine's bytecode the result is `shaderPackLoaded = false` followed by
+  `shaderPack = new ShaderPackNone()` — that is, `getShaderPack(name)` returned null *after* `loadConfig` had set
+  the name. So the pack's resolution is the suspect, not its contents.
+
+
 ## GL warnings that are not failures
 
 1.21.6, 1.21.7 and 1.20.2 log `[Shaders] OpenGL error: 1282 (Invalid operation), program: gbuffers_*, at:

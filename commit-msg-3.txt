@@ -1,0 +1,20 @@
+Add the 1.21.9 gap analysis and the confirmed final numbers
+
+Three things the previous commit could not state, now measured:
+
+- 1.21.9's shader pack is not a pack problem and not a config problem. Selecting
+  OptiFine's own built-in pack (shaderPack=internal) reports the same "No
+  shaderpack loaded.", and tools/ShaderConfigProbe.java - which reads
+  optionsshaders.txt the way OptiFine does, seed then Properties.load then read
+  back - returns the pack name correctly. In OptiFine's bytecode the outcome is
+  shaderPackLoaded=false followed by shaderPack=new ShaderPackNone(), so
+  getShaderPack(name) returned null after loadConfig had already set the name.
+  That is recorded in both the report and the doc so the next attempt starts
+  from it;
+- a second full sweep reproduces the report line for line: 14 of 15 launchable
+  obfuscated releases load a world with 54 shader programs compiled and no crash,
+  and only 1.21 fails, on Lithium's mixin rather than on anything here. Its raw
+  output is kept as tools/sweep-final-confirm.txt;
+- the fixer's log line did not put a space before the constructor descriptor, so
+  it read "...ShadersTex.getMultiTexIDnet/optifine/...". Fixed, and only the log
+  line changed.

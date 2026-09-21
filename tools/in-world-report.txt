@@ -55,6 +55,21 @@ The one real gap is **1.21.9**: the world loads and the game runs, but OptiFine 
 to the module system - 1.21.8 and 1.21.10, which bookend it, both load it. It is recorded as a gap rather than a
 pass.
 
+What has been established about it, so the next attempt does not repeat the work:
+
+* it is not the pack. Selecting OptiFine's own built-in pack (`shaderPack=internal`) reports the same
+  `No shaderpack loaded.`, so nothing about the Complementary archive is involved;
+* it is not the config file. `tools/ShaderConfigProbe.java` reads `test/world/w1.21.9/optionsshaders.txt` the way
+  OptiFine does - seed the default, `load()` over it, read back - and gets
+  `shaderPack = [ComplementaryReimagined_r5.9.3.zip]`, correctly;
+* it is not the pactcher. The same jar, same OptiFine build and same config load the pack on 1.21.8 and 1.21.10,
+  and this mod's own fixer reports the expected `MultiTexID(Lnet/minecraft/class_10868;...)` constructor on all
+  three;
+* in OptiFine's bytecode the failure is `shaderPackLoaded = false` with `shaderPack = new ShaderPackNone()` -
+  i.e. `getShaderPack(name)` returned null after `loadConfig` had set the name, which points at the pack's
+  resolution rather than at its contents.
+
+
 How the shared defects behind these numbers were found
 ------------------------------------------------------
 

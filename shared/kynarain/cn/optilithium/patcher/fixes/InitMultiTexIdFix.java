@@ -182,7 +182,7 @@ public class InitMultiTexIdFix implements ClassFixer {
 		System.out.println("[OptiLithium] " + optifine.name + " (" + intendedFor + "): OptiFine's " + FIELD
 				+ " field was never initialised, so " + GETTER + "() returned null and its own shader code"
 				+ " dereferenced it during game start. The getter now allocates the id on first use"
-				+ " (new " + MULTI_TEX_OWNER + ctor + ", cached by GL texture id) and " + initialised
+				+ " (new " + MULTI_TEX_OWNER + " " + ctor + ", cached by GL texture id) and " + initialised
 				+ " constructor(s) call it after super(), so the field is set from the moment a texture exists.");
 	}
 
