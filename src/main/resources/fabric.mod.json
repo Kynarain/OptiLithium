@@ -1,37 +1,37 @@
 {
   "schemaVersion": 1,
-  "id": "${optifabric_id}",
+  "id": "${optilithium_id}",
   "version": "${version}",
 
-  "name": "${optifabric_name}",
-  "description": "Loads OptiFine into Fabric. Put the OptiFine jar for ${minecraft_version} into the mods folder next to this mod; ${optifabric_name} ${optifabric_verbs} it at runtime. OptiFine itself is not bundled or redistributed.",
+  "name": "${optilithium_name}",
+  "description": "Loads OptiFine into Fabric. Put the OptiFine jar for ${minecraft_version} into the mods folder next to this mod; ${optilithium_name} ${optilithium_verbs} it at runtime. OptiFine itself is not bundled or redistributed.",
   "authors": [
     "kynarain (1.21.11 port)",
     "Modmuss50",
     "Chocohead"
   ],
   "contact": {
-    "homepage": "https://www.curseforge.com/minecraft/mc-mods/optifabric",
-    "sources": "https://github.com/Chocohead/OptiFabric"
+    "homepage": "https://www.curseforge.com/minecraft/mc-mods/optilithium",
+    "sources": "https://github.com/Chocohead/OptiLithium"
   },
   "license": "MPL-2.0",
-  "icon": "assets/optifabric/icon.png",
+  "icon": "assets/optilithium/icon.png",
   "environment": "client",
 
   "entrypoints": {
     "preLaunch": [
-      "kynarain.cn.optifabric.Optifabric"
+      "kynarain.cn.optilithium.Optilithium"
     ]
   },
 
   "mixins": [
     {
-      "config": "optifabric.mixins.json",
+      "config": "optilithium.mixins.json",
       "environment": "client"
     }
   ],
 
-  "custom": {${optifabric_custom}
+  "custom": {${optilithium_custom}
   },
 
   "depends": {

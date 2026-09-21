@@ -8,4 +8,5 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'OptiFabric-1.21.x'
+rootProject.name = 'OptiLithium'
+

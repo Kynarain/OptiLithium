@@ -2,24 +2,34 @@ plugins {
     id 'fabric-loom' version '1.17-SNAPSHOT'
 }
 
-// The 1.21.x line. Every release here is obfuscated, so each needs its own official -> intermediary mappings
-// bundled into the jar (the obfuscated names differ per version, so a wrongly built jar would remap OptiFine
-// into nonsense) - which is why one jar is always built for exactly one release. The fixers in
-// src/main/java/.../patcher/fixes are written against intermediary ids, which are stable across the 1.21.x
-// releases, so the same sources serve all of them.
+// The obfuscated release line, Minecraft 1.20 through 1.21.11. Every release here is obfuscated, so each
+// needs its own official -> intermediary mappings bundled into the jar (the obfuscated names differ per
+// version, so a wrongly built jar would remap OptiFine into nonsense) - which is why one jar is always built
+// for exactly one release. The fixers in src/main/java/.../patcher/fixes are written against intermediary
+// ids, which are stable across the obfuscated releases, so the same sources serve all of them.
 //
 // The default release comes from gradle.properties and -Pmc=<version> builds another one:
 //
 //   .\gradlew build "-Pmc=1.21.8"
 //
-// This branch is the 1.21.x line on its own: one Gradle project at the root and no second source tree.
-// (The tree used to build a second, unrelated release line as well; that line has its own branch now, so
-// nothing here refers to it.)
+// The unobfuscated 26.x line is a separate source tree (see docs/LINES.md); its fixers address the game by
+// official name instead, and the two registration tables are not interchangeable.
 def targetMc = (project.findProperty("mc") ?: project.minecraft_version).toString()
 
 // Yarn is published per release and its build number is part of the version string, so the supported releases
 // are listed here (latest yarn build of each). Adding a release is one line.
+//
+// 1.20.3 and 1.20.5 are in here deliberately even though OptiFine publishes no build for either: the
+// project's rule is that the release list follows Fabric/Yarn, and a release only drops out when it cannot
+// be built at all. OptifineVersion refuses to run with a mismatched OptiFine jar anyway.
 def yarnBuilds = [
+        "1.20"    : "1.20+build.1",
+        "1.20.1"  : "1.20.1+build.10",
+        "1.20.2"  : "1.20.2+build.4",
+        "1.20.3"  : "1.20.3+build.1",
+        "1.20.4"  : "1.20.4+build.3",
+        "1.20.5"  : "1.20.5+build.1",
+        "1.20.6"  : "1.20.6+build.3",
         "1.21"    : "1.21+build.9",
         "1.21.1"  : "1.21.1+build.3",
         "1.21.3"  : "1.21.3+build.2",
@@ -30,6 +40,18 @@ def yarnBuilds = [
         "1.21.9"  : "1.21.9+build.1",
         "1.21.10" : "1.21.10+build.3",
         "1.21.11" : "1.21.11+build.6",
+]
+
+// The Java release each Minecraft version was compiled for, which is also the floor for this mod's own
+// bytecode: Mixin refuses to apply a mixin class whose class-file version is newer than the config's
+// compatibilityLevel, and the game refuses to load a class file newer than its own runtime.
+// 1.20 through 1.20.4 run on Java 17; 1.20.5 and everything after it require Java 21.
+def javaVersions = [
+        "1.20"    : 17,
+        "1.20.1"  : 17,
+        "1.20.2"  : 17,
+        "1.20.3"  : 17,
+        "1.20.4"  : 17,
 ]
 
 def targetYarn = yarnBuilds[targetMc]
@@ -74,7 +96,10 @@ dependencies {
     compileOnly "org.ow2.asm:asm-analysis:${project.asm_version}"
 }
 
-def targetJavaVersion = 21
+// The mod's own bytecode must not be newer than the release it runs on, so this follows the game: Java 17
+// for 1.20 through 1.20.4, Java 21 for 1.20.5 and later. It also has to match the mixin config's
+// compatibilityLevel, or Mixin refuses to apply this mod's own two mixins.
+def targetJavaVersion = javaVersions.get(targetMc, 21)
 def mixinCompatibilityLevel = "JAVA_" + targetJavaVersion
 
 // This line declares "fabric-renderer-api-v1:contains_renderer" so that Indigo steps aside:
@@ -90,23 +115,27 @@ processResources {
     inputs.property "minecraft_version", targetMc
     inputs.property "loader_version", project.loader_version
     inputs.property "mixin_compatibility_level", mixinCompatibilityLevel
-    inputs.property "optifabric_custom", customMetadata
+    inputs.property "optilithium_custom", customMetadata
     filteringCharset "UTF-8"
 
     filesMatching("fabric.mod.json") {
         expand "version": project.version,
                 "minecraft_version": targetMc,
                 "loader_version": project.loader_version,
-                "optifabric_custom": customMetadata,
-                // The id and the display name stay as published: this line is "optifabric" / OptiFabric.
-                "optifabric_id": "optifabric",
-                "optifabric_name": "OptiFabric",
-                "optifabric_verbs": "patches, remaps and applies"
+                "optilithium_custom": customMetadata,
+                // The id is "optilithium" and it has to stay that way, not for branding but because it is
+                // the only thing that gets this mod past Lithium: Lithium declares
+                // "breaks": {"optifabric": "*"} and Fabric Loader's solver matches that by id, so a jar
+                // called optifabric can never be resolved alongside it. Verified with Loader 0.19.5 -
+                // "Immediate reason: [NEG_HARD_DEP lithium ... {breaks optifabric @ [*]}]".
+                "optilithium_id": "optilithium",
+                "optilithium_name": "OptiLithium",
+                "optilithium_verbs": "patches, remaps and applies"
     }
 
     // The mixin config carries a placeholder: Mixin refuses to apply a mixin class compiled for a newer Java
     // version than its config declares, so this line has to follow the compile release of the project.
-    filesMatching("optifabric.mixins.json") {
+    filesMatching("optilithium.mixins.json") {
         expand "mixin_compatibility_level": mixinCompatibilityLevel
     }
 

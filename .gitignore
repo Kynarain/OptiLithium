@@ -26,6 +26,13 @@ logs
 # Downloaded OptiFine test jar (do not redistribute)
 test-downloads/
 
+# The harness writes everything it produces under test\: the version profile it builds, the extracted
+# natives, the game directory (with the OptiFine jar the user supplied) and the run logs. None of that is
+# source - and the OptiFine jars in particular must never be committed.
+test/run/
+test/natives/
+test/*.log
+
 # Local reference snapshot of the upstream sources
 reference/
 
