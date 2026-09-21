@@ -1,5 +1,11 @@
 # OptiLithium version matrix
 
+> **SUPERSEDED.** Every row below records a **title-screen** pass made on 2026-09-21, before the `BlockEntity`
+> capability defect was fixed - and `tools/matrix.ps1` stops at the title screen, which is not the same as the
+> mod working. The current, measured state of each release is in `tools/in-world-report.txt` and
+> `docs/IN_WORLD_VERIFICATION.md`: 14 of the 16 supported releases load a world with a shader pack compiled.
+> This file is kept only as the record of what the title-screen pass showed.
+
 Produced by `tools/matrix.ps1` on 2026-09-21 with the jars built from this revision: build the jar for that release, launch a real client with OptiFine + Lithium, then read the log. "prepared / failed" is the pipeline's own line `Prepared N patched classes (S skipped, F failed)`; F must be 0.
 
 | MC | verdict | prepared / failed | Lithium loaded | failure reason |

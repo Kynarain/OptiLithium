@@ -118,10 +118,23 @@ public class OptifineInjector {
 		// class (where OptiFine's field lives) and also OptiFine's own ShadersTex (which calls the getter), and
 		// the second half cannot run until the first has recorded which class owns the field. The class cache is
 		// ordered by the jar it came from and the extras are appended after it, so iterating one combined map
-		// would put the game class first only by luck. Game classes here, taken-over classes after.
+		// would put the game class first only by luck.
+		//
+		// A class can be registered as an extra AND arrive in the cache - class_11681 does, because OptiFine
+		// patches it on some releases and not others, and the registration covers the releases where it does
+		// not. Patching such a class twice adds its fixers' methods twice and the game then refuses the class:
+		//
+		//   ClassFormatError: Duplicate method name "optilithium$movingBlocks" with signature "..." in class
+		//   file net/minecraft/class_11681
+		//
+		// so an extra that the first loop already produced is skipped. Set is small; the alternative was to make
+		// every such fixer idempotent, which is a property nobody can check from the fixer's own code.
 		Map<String, byte[]> patched = new HashMap<>(classes.size() * 2);
+		Set<String> cachePrepared = new HashSet<>();
 
 		for (Map.Entry<String, ClassNode> entry : classes.entrySet()) {
+			if (OptifineFixer.INSTANCE.hasExtraClass(entry.getKey())) cachePrepared.add(entry.getKey());
+
 			try {
 				patched.put(entry.getKey().replace('/', '.'), patch(entry.getKey(), entry.getValue()));
 			} catch (Throwable t) {
@@ -134,7 +147,7 @@ public class OptifineInjector {
 		for (String extra : OptifineFixer.INSTANCE.getExtraClasses()) {
 			ClassNode node = classes.get(extra);
 
-			if (node == null) continue; // OptiFine patched it after all, so it went through the loop above
+			if (node == null || cachePrepared.contains(extra)) continue;
 
 			try {
 				patched.put(extra.replace('/', '.'), patch(extra, node));

@@ -152,10 +152,12 @@ public class InitMultiTexIdFix implements ClassFixer {
 		}
 
 		if (glId == null) {
-			// The id is what OptiFine's own deleteTextures keys its map by, and without it there is no way to
-			// name the pair of GL textures the id stands for. Refuse rather than guess an id.
+			// Kept as a canary rather than as something the emitted code needs. It is the accessor OptiFine's
+			// own id bookkeeping is built around, so a class that does not have it is not the class this fixer
+			// was written for - and proceeding on that assumption is how a fixer reports success and the client
+			// crashes anyway.
 			System.err.println("[OptiLithium] " + optifine.name + " has OptiFine's " + FIELD + " field but no "
-					+ GL_ID + "(), so " + GETTER + "() is left as it is (it would return null)");
+					+ GL_ID + "(), so it is left as it is (" + GETTER + "() would return null)");
 
 			return;
 		}
@@ -174,7 +176,7 @@ public class InitMultiTexIdFix implements ClassFixer {
 		}
 
 		rewriteGetter(getter, optifine.name, ctor);
-		addHelper(optifine, glId, ctor);
+		addHelper(optifine, ctor);
 		int initialised = initialiseInConstructors(optifine);
 
 		System.out.println("[OptiLithium] " + optifine.name + " (" + intendedFor + "): OptiFine's " + FIELD
@@ -285,7 +287,7 @@ public class InitMultiTexIdFix implements ClassFixer {
 	 * textures through this field and only consults its own map when the field is already null, so a getter that
 	 * handed out an id while leaving the field unset would leak two GL textures per dynamic texture.</p>
 	 */
-	private void addHelper(ClassNode owner, MethodNode glId, String ctor) {
+	private void addHelper(ClassNode owner, String ctor) {
 		boolean glBased = ctor.startsWith("(L");
 
 		MethodNode helper = new MethodNode(Opcodes.ACC_PRIVATE | Opcodes.ACC_SYNTHETIC, MULTI_TEX_HELPER,
@@ -307,12 +309,19 @@ public class InitMultiTexIdFix implements ClassFixer {
 			// 1.21.8 and newer: three GL textures, and the one to hand over is this texture itself.
 			for (int i = 0; i < 3; i++) code.add(new VarInsnNode(Opcodes.ALOAD, 0));
 		} else {
-			// Through 1.21.7: the texture's own GL id plus two fresh ones for the normal and specular maps,
-			// which is exactly what OptiFine's own static helper does on this path.
-			code.add(new VarInsnNode(Opcodes.ALOAD, 0));
-			code.add(new MethodInsnNode(Opcodes.INVOKEVIRTUAL, owner.name, glId.name, glId.desc, false));
-			code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glGenTextures", "()I", false));
-			code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glGenTextures", "()I", false));
+			// Through 1.21.7: three GL ids, and GL11.glGenTextures() rather than the texture's own id.
+			//
+			// The texture's OWN id is 0 at this point - the field is set after `super()` and the GL texture is
+			// created later, in the subclass's own body - and OptiFine checks the value:
+			//
+			//   [Shaders] Error : MultiTexID.base mismatch: 0, texid: 2
+			//
+			// Using glGenTextures() three times gives three non-zero ids, which is what the game's own
+			// AbstractTexture path ends up with and what OptiFine's static helper does when it has a real id
+			// in hand. The GL_ID parameter is only used to learn the descriptor now.
+			for (int i = 0; i < 3; i++) {
+				code.add(new MethodInsnNode(Opcodes.INVOKESTATIC, "org/lwjgl/opengl/GL11", "glGenTextures", "()I", false));
+			}
 		}
 
 		code.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, MULTI_TEX_OWNER, "<init>", ctor, false));

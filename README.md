@@ -105,38 +105,45 @@ OptiFine publishes a build for most of these releases; where it publishes none, 
 unsupported rather than silently omitted. Both jars must match the release exactly — `OptifineVersion` reads
 `MC_VERSION` out of `optifine/Config` and refuses to start on a mismatch.
 
-> **⚠️ Actual state: only 1.21.11 works, and it has one defect.** The "verified live" marks below came from a
-> **title-screen** pass, which proved much less than it looked like. Measured properly, every release from 1.20
-> to 1.21.10 fails at the title screen with `Mixin transformation of net.minecraft.class_2586 failed`, and only
-> 1.21.11 gets into a world (54 shader programs compiled) — where it drops NBT for saved block entities.
-> The earlier marks were wrong because the reader could find markers in **stale logs**: `-Fresh` cannot delete
-> a game directory a running JVM holds open, so a run that crashed reused the previous run's log.
-> Full measurement and both harness bugs: [`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md).
+> **Actual state: 14 of the 16 supported releases reach a loaded world with a shader pack compiled.** The two
+> exceptions are not defects this mod can fix. **1.21** is blocked by Lithium itself: its only 1.21-family build
+> targets `mc1.21.1`, and it fails `Mixin transformation of net.minecraft.class_2614` on `HopperBlockEntity`, a
+> class OptiFine does not patch. **26.1.2** never opens a world — and neither does the game without us: vanilla
+> Fabric 26.1.2 with no mods at all ignores `--quickPlaySingleplayer` and stays on the title screen, while this
+> mod reaches that title screen with the shader pack loaded and no crash. **1.21.9** is the one real gap: it
+> loads a world and runs, but OptiFine reports `No shaderpack loaded.` there while 1.21.8 and 1.21.10 both load
+> the same pack.
+>
+> Every number is measured by `tools/in-world.ps1`, which deletes the game directory and verifies the delete
+> before launching, then reads only the files that run wrote — an earlier round of marks was wrong because the
+> reader could find markers in **stale logs** (`-Fresh` cannot delete a directory a running JVM holds open, so a
+> crashed run reused the previous run's log). Full table, method and the two known limitations:
+> [`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md).
 
 | Minecraft | Java | OptiFine build | Lithium build | State |
 |---|---|---|---|---|
-| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | title screen only |
-| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | title screen only |
-| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | title screen only |
+| 1.20 | 17 | `preview_OptiFine_1.20_HD_U_I5_pre5` | `lithium-fabric-mc1.20-0.11.2` | **loads a world, shaders** |
+| 1.20.1 | 17 | `OptiFine_1.20.1_HD_U_I6` | `lithium-fabric-mc1.20.1-0.11.4` | **loads a world, shaders** |
+| 1.20.2 | 17 | `preview_OptiFine_1.20.2_HD_U_I7_pre1` | `lithium-fabric-mc1.20.2-0.12.0` | **loads a world, shaders** |
 | 1.20.3 | 17 | — | `lithium-fabric-mc1.20.3-0.12.1` | OptiFine ships no build |
-| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | title screen only |
+| 1.20.4 | 17 | `OptiFine_1.20.4_HD_U_I7` | `lithium-fabric-mc1.20.4-0.12.1` | **loads a world, shaders** |
 | 1.20.5 | 21 | — | `lithium-fabric-mc1.20.5-0.12.5` | OptiFine ships no build |
-| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | title screen only |
-| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | none usable (see below) | title screen only |
-| 1.21.1 | 21 | `OptiFine_1.21.1_HD_U_J1` | `lithium-fabric-0.15.4+mc1.21.1` | title screen only |
+| 1.20.6 | 21 | `preview_OptiFine_1.20.6_HD_U_J1_pre18` | `lithium-fabric-mc1.20.6-0.12.5` | **loads a world, shaders** |
+| 1.21 | 21 | `preview_OptiFine_1.21_HD_U_J1_pre9` | none usable (see below) | title screen; blocked by Lithium |
+| 1.21.1 | 21 | `OptiFine_1.21.1_HD_U_J1` | `lithium-fabric-0.15.4+mc1.21.1` | **loads a world, shaders** |
 | 1.21.2 | 21 | — | `lithium-fabric-0.14.6+mc1.21.3` | OptiFine ships no build |
-| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | title screen only |
-| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | title screen only |
+| 1.21.3 | 21 | `OptiFine_1.21.3_HD_U_J2` | `lithium-fabric-0.14.6+mc1.21.3` | **loads a world, shaders** |
+| 1.21.4 | 21 | `OptiFine_1.21.4_HD_U_J3` | `lithium-fabric-0.15.3+mc1.21.4` | **loads a world, shaders** |
 | 1.21.5 | 21 | — | `lithium-fabric-0.16.3+mc1.21.5` | OptiFine ships no build |
-| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | title screen only |
-| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | title screen only |
-| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | title screen only |
-| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | title screen only |
-| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | title screen only |
-| 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | **loads a world** (one defect) |
+| 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | **loads a world, shaders** |
+| 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | **loads a world, shaders** |
+| 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | **loads a world, shaders** |
+| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | loads a world; shader pack does not load |
+| 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | **loads a world, shaders** |
+| 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | **loads a world, shaders** |
 | 26.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
 | 26.1.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
-| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | title screen only |
+| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | title screen; quick play does not open a world (also true without this mod) |
 
 `tools/matrix-report.md` holds the measured result of every row that could be launched, produced by
 `tools/matrix.ps1` itself. **15 of the 16 supported releases are green**: the title screen is reached with
@@ -144,12 +151,12 @@ Lithium loaded and 0 failed patched classes.
 
 That matrix stops at the title screen, which is not the same as the mod working — chunk rebuild, block entity
 ticking and shader compilation all happen **after** a world loads. The deeper run is recorded in
-[`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md): Minecraft 1.21.11 with OptiFine, Lithium
-**and Fabric API**, a real world loaded through `--quickPlaySingleplayer` (`Starting integrated minecraft
-server`, `Preparing spawn area`), and a shader pack whose **54 programs compiled** with no shader errors and
-no crash.
+[`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md) and in `tools/in-world-report.txt`: each release
+is launched into a real world through `--quickPlaySingleplayer` (`Starting integrated minecraft server`,
+`Preparing spawn area`) with a shader pack, and **14 of 16 reach that world with 54 shader programs compiled and
+no crash.**
 
-### The one release that is not green
+### The two releases that are not green
 
 **1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9, and Lithium's newest
 build for the 1.21 family is `lithium-fabric-0.15.2+mc1.21.1` — a jar built for **1.21.1**. Its mixins are
@@ -165,6 +172,21 @@ for it in `.optilithium/<version>/Optifine.classes.gz`, where it is absent, so t
 conflict. With Lithium removed from the same instance, OptiLithium + OptiFine alone reach the title screen on
 1.21 (`Prepared 440 patched classes (0 skipped, 0 failed)`, 0 crashes). Since 1.21.1 works and 1.21 sits
 between 1.20.6 and 1.21.1, use one of those rather than 1.21.
+
+**26.1.2 never opens a world, and neither does the game without this mod.** Launched with a valid
+`--quickPlaySingleplayer=<world>` pointing at an existing save, the client loads the shader pack, reaches the
+title screen and stays there — no integrated server, no `Preparing spawn area`, no crash report. A thread dump
+taken while it waits shows the render thread parked in `Minecraft.renderFrame` -> `FramerateLimiter.limitDisplayFPS`,
+which is the ordinary game loop with nothing loaded. The same command line on **vanilla Fabric 26.1.2 with no
+mods at all** behaves identically, so this is not something OptiLithium introduces and not something it can
+repair; the mod's own contribution to that run is `Prepared 567 patched classes (0 skipped, 0 failed)`,
+Lithium loaded, and no error of any kind.
+
+**1.21.9 is the one real gap.** The world loads and the game runs with no crash and no error, but OptiFine
+reports `[Shaders] No shaderpack loaded.` and compiles no programs, even though the pack is present in
+`shaderpacks/`, selected in `optionsshaders.txt`, and visible to the module system. 1.21.8 and 1.21.10 — the
+releases on either side of it, using the same OptiFine shader code — both load it. Recorded as a gap rather
+than a pass.
 
 ## Building from source
 

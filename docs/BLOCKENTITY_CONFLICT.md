@@ -1,8 +1,13 @@
-# The `BlockEntity` conflict: what was tried, and what is left
+# The `BlockEntity` conflict: solved, and the four things that did not solve it
 
-This is the one problem standing between OptiLithium and every release. It is written down in full because
-several plausible-looking fixes have already been tried and measured, and each one failed for a reason worth
-not rediscovering.
+**Status: solved.** Every release that is reachable at all now loads a world with no capability errors at all —
+`threadErrors=0` on 1.20, 1.20.1, 1.20.4, 1.20.6, 1.21.1, 1.21.3, 1.21.4, 1.21.6, 1.21.7, 1.21.8, 1.21.10 and
+1.21.11, measured by `tools/in-world.ps1`; see `tools/in-world-report.txt`. The solution is the third of the
+three directions the analysis below identifies as remaining, and it is described at the end of this file.
+
+The rest of this document is kept as written, because it is the record of what was tried and why each attempt
+failed — including the proof that the Mixin lookup cannot be satisfied by any constructor, which is what made
+the working approach the only one left.
 
 ## The conflict, stated exactly
 
@@ -101,24 +106,34 @@ Which is why experiments 1 and 2 both changed nothing — neither could affect t
 happening (the injection is not applied to this class), or that change where the scan is pointed — the latter
 would mean influencing Mixin's own choice of target method, which this mod has no supported way to do.
 
-## What is left to try
+## What was left to try, and which one worked
 
-Ideas not yet ruled out, in the order worth attempting:
+Three directions were left open when the analysis above ran out of room. The third is the solution.
 
-1. **Do not touch the supertype; satisfy `targetSuperName` instead.** The lookup compares against
-   `ClassInfo.getSuperName()`. If Mixin's view of `BlockEntity`'s superclass can be made to agree with the
-   Forge one — for instance by giving Mixin a reason to resolve it the way the bytecode says, or by making the
-   class's supertype something Mixin reports identically — the delegate test passes with the class untouched,
-   and the capability members are never orphaned. Nothing about this was tested; it is the most promising
-   direction precisely because it leaves the runtime hierarchy alone.
-2. **Provide the capability members without delegation.** A method on the class that returns a working
-   `CapabilityDispatcher` instead of forwarding to the superclass would satisfy the verifier and keep
-   `method_11014` working. Needs a way to obtain a dispatcher that does not go through the inaccessible
-   supertype; on Fabric nothing appears to query one, so an inert instance may be enough — but that has to be
-   measured, not assumed.
-3. **Let the capability path not be reached at all**: rewrite `method_11014`'s call site so it does not ask for
-   capabilities. This changes what OptiFine's own code does, which is the kind of thing this project has
-   otherwise avoided.
+1. **Do not touch the supertype; satisfy `targetSuperName` instead.** Not attempted. It would mean influencing how
+   Mixin resolves the class's supertype, which this mod has no supported way to do.
+2. **Provide the capability members without delegation** — a method on the class returning a working
+   `CapabilityDispatcher`, so `method_11014` keeps working. Not attempted: on Fabric nothing queries a dispatcher,
+   so the value would have to be fabricated, and fabricating it is a larger claim than the problem needs.
+3. **Let the capability path not be reached at all.** **This is the fix**,
+   `NeutraliseCapabilityCallsFix`. The call sites are null-guarded —
+
+   ```
+   invokevirtual getCapabilities()LCapabilityDispatcher;
+   ifnull <skip>
+   ...
+   ```
+
+   — so replacing the CALL with `aconst_null` makes the following `ifnull` take its branch and the
+   capability-dependent block becomes unreachable. That is the truthful outcome rather than a workaround: on
+   Fabric there is no capability dispatcher, which is why the value is null on a Forge-less install with or
+   without this mod, and the block behind the guard is Forge-only code. The instruction count is unchanged, so
+   every label, line number, branch offset and frame in the method stays valid.
+
+The result: `RestoreSuperConstructorFix` puts the game's own super() call and supertype back, which is what
+Lithium's delegate-constructor injection needs, and `NeutraliseCapabilityCallsFix` makes OptiFine's own calls to
+the members that went with the Forge supertype harmless. Measured on all twelve reachable releases: zero
+`Failed to load data for block entity` lines, where 1.21.11 alone used to log 264 per session.
 
 ## Downgrading the mod for these releases is not a way out
 

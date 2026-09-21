@@ -8,6 +8,54 @@ The inherited history of the OptiFabric port this project is based on is in
 [`docs/archive/`](docs/archive/); it documents the 1.20.6 → 1.21.11 pipeline work and is still the best
 reference for how OptiFine's recompiler is repaired in general.
 
+## [Unreleased]
+
+### Fixed
+
+- **Every release from 1.21.6 on crashed during game initialisation when a shader pack was selected.**
+  OptiFine's patcher adds a `multiTex` field to the GL texture class along with `getMultiTexID()` /
+  `setMultiTexID()`, and never initialises it. OptiFine's own shader code reads it through the virtual getter,
+  which for a `DynamicTexture` resolves up the hierarchy to a stub returning null, and dereferences the result
+  immediately: `NullPointerException: Cannot read field "norm" because "multiTex" is null`. The new
+  `InitMultiTexIdFix` allocates the id on first use inside the class that owns the field, caching it by GL
+  texture id, and every constructor calls the getter once after `super()` so the field is set as soon as a
+  texture exists. `MultiTexID`'s constructor is read out of OptiFine's mapped jar because it changed shape:
+  `(int,int,int)` through 1.21.7, three GL textures from 1.21.8.
+- **That fixer was inert for a whole round.** It was registered under `GlTexture`'s Mojang path while the class
+  being patched is named `class_10868`, and `RemappingUtils` returns a Mojang name unchanged, so the
+  registration never matched - while the pipeline still printed `Prepared 487 patched classes (0 skipped, 0
+  failed)` and the crash was identical. `registerFix` now registers both names.
+- **A `getNext()` walk inside that fixer hung the client** at 100% of one core for eight minutes, with no
+  crash, no error and `prepared=-`. Traversals go through `InsnList.toArray()`.
+- **A class registered as an extra was patched twice when OptiFine also patched it**, a
+  `ClassFormatError: Duplicate method name` on 1.21.9. `OptifineInjector` prepares the game classes first and
+  skips an extra that already went through.
+- **The id allocation used the texture's own GL id, which is 0 during construction**, producing
+  `[Shaders] Error : MultiTexID.base mismatch: 0, texid: N`. It uses `GL11.glGenTextures()` for all three ids.
+
+### Added
+
+- `tools/build-all.ps1` builds every release and keeps one jar per release, because `build/libs` holds only the
+  last one built and a sweep that alternates build and measure can otherwise test one release's jar against
+  another release's game.
+- `tools/world-launch.ps1` measures a release with a chosen mod set (`none` / `mine` / `of` / `all`), which is
+  how the baselines for the defects above were taken.
+- `tools/sweep-inworld.ps1` runs `tools/in-world.ps1` over a list of releases from one process.
+- `tools/ClassInfo.java` and `tools/FindInCache.java` answer "what does this class declare" and "who references
+  this" for an OptiFine class cache, which is how the `multiTex` mechanism was read out of bytecode.
+- `-Doptilithium.traceFixes` and `-Doptilithium.traceClasses` report which classes a fixer reached and what it
+  decided - the difference between "the fixer did nothing" and "the fixer never ran".
+
+### Changed
+
+- `tools/in-world.ps1` matches rig noise by prefix over the whole line. The old list matched only
+  `Failed to load random sequence salt` while the sibling lines are `include_world_seed`, `sequences` and
+  `include_sequence_id`, so a clean 1.20 run measured as `threadErrors=6 rigNoise=4`.
+- `tools/in-world.ps1` refuses to run without its UTF-8 BOM. The default world name is Chinese; without the BOM
+  PowerShell reads the script as ANSI and every release fails in four seconds claiming the world is missing.
+- `launch.ps1` splits `-ExtraJvm` on commas and spaces. A caller through a shell hands a `[string[]]` over
+  joined, so two properties arrived as one `-D` whose value was `true -Dsecond=...` - no property, no error.
+
 ## [1.0.0] — 2026-09-21
 
 First release. OptiLithium loads OptiFine and Lithium in the same Fabric client, for Minecraft 1.20 through

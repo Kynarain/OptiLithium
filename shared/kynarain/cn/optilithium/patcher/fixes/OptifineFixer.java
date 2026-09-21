@@ -476,6 +476,11 @@ public class OptifineFixer {
 		return extraClasses;
 	}
 
+	/** True when this class is registered as one OptiFine does not patch, so the caller can avoid patching it twice. */
+	public boolean hasExtraClass(String className) {
+		return extraClasses.contains(className);
+	}
+
 	private void registerGlobalFix(ClassFixer classFixer) {
 		globalFixes.add(classFixer);
 	}

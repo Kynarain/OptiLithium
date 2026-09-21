@@ -1,16 +1,74 @@
-﻿1.20 : FAILED  prepared=410 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed
-1.20.1 : FAILED  prepared=412 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed
-1.20.2 : FAILED  prepared=423 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed
-1.20.4 : FAILED  prepared=427 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.20.6 : FAILED  prepared=426 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21 : FAILED  prepared=440 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed
-1.21.1 : FAILED  prepared=425 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.3 : FAILED  prepared=440 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.4 : FAILED  prepared=474 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.6 : FAILED  prepared=487 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.7 : FAILED  prepared=500 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.8 : FAILED  prepared=516 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.9 : FAILED  prepared=519 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.10 : FAILED  prepared=553 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=0  threadErrors=0  Mixin transformation of net.minecraft.class_2586 failed | Could not initialize class net.optifine.reflect.Reflector
-1.21.11 : IN WORLD  prepared=570 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=264  NoSuchMethodError: 'net.minecraftforge.common.capabilities.CapabilityDispatcher net.minecraft.class_2586.getCa
-26.1.2 : NO LAUNCH  prepared=567 / 0 failed  inWorld=no  shaderpack=yes  programs=0  lithium=yes  crashes=0  threadErrors=0  -
+OptiLithium in-world verification
+===============================
+
+Produced by tools/in-world.ps1 on 2026-09-22, one release at a time, with the jars built from this revision
+(`tools/build-all.ps1` keeps one jar per release). Every number below comes from a log written by the run that
+produced it - the script deletes the game directory first and verifies the delete, because a number read from a
+stale log is worse than no number.
+
+What one run does: launch a real client with OptiFine + Lithium + this mod, quick-play into a copy of a world, and
+then read only the files that run wrote. "prepared / failed" is the pipeline's own line
+`Prepared N patched classes (S skipped, F failed)`; F must be 0. **programs** counts `Program loaded:` lines, and
+54 is 27 unique shader programs counted from both the stdout log and latest.log.
+
+| MC | verdict | prepared / failed | in world | shader pack | programs | Lithium | crashes | thread errors |
+|---|---|---|---|---|---|---|---|---|
+| 1.20 | IN WORLD | 410 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.1 | IN WORLD | 412 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.2 | IN WORLD | 423 / 0 | yes | yes | 54 | yes | 0 | 4 (see below) |
+| 1.20.4 | IN WORLD | 427 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.6 | IN WORLD | 426 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21 | FAILED | 440 / 0 | no | - | - | yes | 0 | 0 |
+| 1.21.1 | IN WORLD | 425 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.3 | IN WORLD | 440 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.4 | IN WORLD | 474 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.6 | IN WORLD | 487 / 0 | yes | yes | 54 | yes | 0 | 8 (GL warnings) |
+| 1.21.7 | IN WORLD | 500 / 0 | yes | yes | 54 | yes | 0 | 16 (GL warnings) |
+| 1.21.8 | IN WORLD | 516 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.9 | IN WORLD | 519 / 0 | yes | **no** | 0 | yes | 0 | 0 |
+| 1.21.10 | IN WORLD | 553 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.11 | IN WORLD | 570 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 26.1.2 | NO LAUNCH | 567 / 0 | no | yes | 0 | yes | 0 | 0 |
+
+Fourteen of sixteen reach a loaded world. Two do not, and neither is a defect this mod can fix:
+
+* **1.21** is blocked by Lithium, not by us. Lithium's only 1.21-family build is `mc1.21.1`, and it fails
+  `Mixin transformation of net.minecraft.class_2614` - `HopperBlockEntity`, a class OptiFine does not patch, so
+  there is nothing here to repair. OptiLithium + OptiFine alone reach the title screen on 1.21.
+* **26.1.2** never opens a world, and neither does the game without us: **vanilla Fabric 26.1.2 with no mods at
+  all ignores `--quickPlaySingleplayer` and sits at the title screen**. The mod reaches the title screen with the
+  shader pack loaded (567 patched classes, 0 failed) and no crash. A thread dump taken while it waits shows the
+  render thread parked in `Minecraft.renderFrame` -> `FramerateLimiter.limitDisplayFPS`, i.e. the ordinary game
+  loop with no integrated server, which is what the title screen looks like from a stack.
+
+The `thread errors` column counts `[Server thread/ERROR]` and `[Render thread/ERROR]` lines that are not rig
+noise. Rig noise is subtracted, not ignored: `Failed to verify authentication` (the rig launches with
+`--accessToken 0`) and `Failed to load random sequence ...` (the rig hands an older release a world written by a
+newer one) are properties of the harness, and the older releases log ten such lines between them.
+
+Two releases report GL-level errors that are OptiFine's shader code talking to the driver, not a failure:
+`[Shaders] OpenGL error: 1282 (Invalid operation), program: gbuffers_*, at: alphaTestRef` on 1.21.6 and 1.21.7,
+and the same family on 1.20.2. The world loads, all 54 programs compile, and nothing is dropped.
+
+The one real gap is **1.21.9**: the world loads and the game runs, but OptiFine reports
+`[Shaders] No shaderpack loaded.` even though the pack is present, selected in `optionsshaders.txt` and visible
+to the module system - 1.21.8 and 1.21.10, which bookend it, both load it. It is recorded as a gap rather than a
+pass.
+
+How the shared defects behind these numbers were found
+------------------------------------------------------
+
+The pipeline's own report line is not enough to trust, and three defects hid behind a healthy-looking
+`Prepared N patched classes (0 skipped, 0 failed)`:
+
+* a `NoSuchMethodError` on `BlockEntity.getCapabilities` appeared ~200 times per world load and dropped each
+  block entity's NBT (fixed by neutralising the null-guarded calls);
+* OptiFine's `multiTex` field was never initialised, so the first dynamic texture ended the client with
+  `NullPointerException: Cannot read field "norm" because "multiTex" is null` on 1.21.6 and newer (fixed by
+  allocating the id on first use and initialising the field in every constructor);
+* the fixer for that field was registered under a name that never matched, so it did not run at all while the
+  pipeline reported success - and, once it did run, a `getNext()` walk inside it hung the client at 100% of one
+  core for eight minutes with no crash, no error and `prepared=-`.
+
+Each of those is documented at its source: `docs/BLOCKENTITY_CONFLICT.md` and the class comment on
+`InitMultiTexIdFix`.
