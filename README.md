@@ -128,14 +128,15 @@ unsupported rather than silently omitted. Both jars must match the release exact
 | 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | ✅ verified live |
 | 26.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
 | 26.1.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
-| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | not built here yet — see below |
+| 26.1.2 | 25 | `preview_OptiFine_26.1.2_HD_U_K1_pre2` | `lithium-fabric-0.24.7+mc26.1.2` | ✅ verified live |
 
 `tools/matrix-report.md` holds the measured result of every row that could be launched, produced by
-`tools/matrix.ps1` itself.
+`tools/matrix.ps1` itself. **15 of the 16 supported releases are green**: the title screen is reached with
+Lithium loaded and 0 failed patched classes.
 
-### The two releases that are not green
+### The one release that is not green
 
-**1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9 and Lithium's newest
+**1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9, and Lithium's newest
 build for the 1.21 family is `lithium-fabric-0.15.2+mc1.21.1` — a jar built for **1.21.1**. Its mixins are
 applied to the 1.21 client and one of them fails the class it targets:
 
@@ -147,27 +148,33 @@ Caused by: NoClassDefFoundError: Could not initialize class net.minecraft.class_
 `class_2614` on 1.21 is `HopperBlockEntity`, which **OptiFine does not patch at all** — verified by looking
 for it in `.optilithium/<version>/Optifine.classes.gz`, where it is absent, so this is not a patched-class
 conflict. With Lithium removed from the same instance, OptiLithium + OptiFine alone reach the title screen on
-1.21. Since 1.21.1 works and 1.21 sits between 1.20.6 and 1.21.1, use one of those rather than 1.21.
-
-**26.1.2 needs a second build flavour.** This project builds the **obfuscated** line, where the fixer table
-addresses classes by intermediary id (`class_2586`). Minecraft 26.1 and newer ship **unobfuscated**: official
-names are runtime names, the intermediary artifact is the empty `0.0.0` placeholder, and Yarn publishes
-nothing for 26.1.2. So `-Pmc=26.1.2` fails in `build.gradle` by design ("No yarn build is listed for
-Minecraft 26.1.2"), and the fixer table that works there is the one that addresses the game by official path
-(`net/minecraft/world/level/block/entity/BlockEntity`) — the table OptiFabric's `26.x` branch carries.
-`docs/LINES.md` records what that second flavour has to change.
+1.21 (`Prepared 440 patched classes (0 skipped, 0 failed)`, 0 crashes). Since 1.21.1 works and 1.21 sits
+between 1.20.6 and 1.21.1, use one of those rather than 1.21.
 
 ## Building from source
 
-The repository root *is* the Gradle project, and one jar is built per Minecraft release:
+One repository builds both release lines, and most of the mod is shared between them:
 
 ```bash
-./gradlew build "-Pmc=1.21.11"      # -> build/libs/OptiLithium-1.0.0+mc1.21.11.jar
+./gradlew build "-Pmc=1.21.11"   # obfuscated line -> build/libs/OptiLithium-1.0.0+mc1.21.11.jar
+./gradlew :v26:build             # 26.x line       -> v26/build/libs/OptiLithium-1.0.0+mc26.1.2.jar
 ```
 
+```
+shared/                            the pipeline: OptifineSetup, OptifineInjector, ClassCache, the fixers
+line/obfuscated/java + resources   the obfuscated line's two mixins, mixin config, fabric.mod.json
+line/official/java + resources     26.x's equivalents, written against official names
+v26/                               the Gradle project that builds the 26.x line out of the two above
+```
+
+The split is possible because **no fixer holds a compiled reference to a game class** — every class name
+inside `patcher/fixes` is a string (checked with a grep for `import net.minecraft.` over the whole directory).
+Both registration tables therefore compile on both lines, and which one is *used* is decided at runtime from
+the namespace the game runs in. `docs/LINES.md` has the full comparison.
+
 The version number always travels with the Minecraft version: `<mod_version_base>+mc<release>`. Adding a
-release is one line in `build.gradle`'s `yarnBuilds` table (plus a Java level in `javaVersions` when the
-release predates Java 21).
+release to the obfuscated line is one line in `build.gradle`'s `yarnBuilds` table (plus a Java level in
+`javaVersions` when the release predates Java 21).
 
 The development environment is not supported: `gradlew runClient` runs in the `named` namespace and would
 need an extra mapping layer, so the runtime refuses it with a message.

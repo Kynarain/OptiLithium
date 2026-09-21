@@ -5,15 +5,25 @@ plugins {
 // The obfuscated release line, Minecraft 1.20 through 1.21.11. Every release here is obfuscated, so each
 // needs its own official -> intermediary mappings bundled into the jar (the obfuscated names differ per
 // version, so a wrongly built jar would remap OptiFine into nonsense) - which is why one jar is always built
-// for exactly one release. The fixers in src/main/java/.../patcher/fixes are written against intermediary
-// ids, which are stable across the obfuscated releases, so the same sources serve all of them.
+// for exactly one release. The fixers are written against intermediary ids, which are stable across the
+// obfuscated releases, so the same sources serve all of them.
 //
 // The default release comes from gradle.properties and -Pmc=<version> builds another one:
 //
 //   .\gradlew build "-Pmc=1.21.8"
+//   .\gradlew :v26:build                  # the unobfuscated 26.x line, a separate project
 //
-// The unobfuscated 26.x line is a separate source tree (see docs/LINES.md); its fixers address the game by
-// official name instead, and the two registration tables are not interchangeable.
+// SOURCE LAYOUT. Most of the mod is namespace independent, so it is shared and compiled into BOTH lines:
+//
+//   shared/                       the pipeline: OptifineSetup, OptifineInjector, ClassCache, the fixers
+//   line/obfuscated/java+resources   this line: its two mixins, its fixer table choice, its mixin config
+//   line/official/java+resources    26.x: the same two mixins against official names, its own mixin config
+//   v26/                          the Gradle project that builds the 26.x line out of the two above
+//
+// The two lines are not interchangeable, and docs/LINES.md is the record of why. What makes sharing possible
+// at all is that no fixer holds a *compiled* reference to a game class: every class name inside them is a
+// string, checked with grep over the whole fixes/ directory. So the whole table compiles on both sides, and
+// which table is *used* is decided at runtime from the namespace the game runs in.
 def targetMc = (project.findProperty("mc") ?: project.minecraft_version).toString()
 
 // Yarn is published per release and its build number is part of the version string, so the supported releases
@@ -77,8 +87,13 @@ configurations {
     intermediaryMappings
 }
 
-// The mod sources sit in the standard src/main of this project: this branch holds the whole 1.21.x line, so
-// there is no second source tree to pull in.
+// The sources: the shared pipeline plus THIS line's mixins and mixin config.
+sourceSets {
+    main {
+        java.srcDirs = ['shared', 'line/obfuscated/java']
+        resources.srcDirs = ['line/obfuscated/resources']
+    }
+}
 
 dependencies {
     minecraft "com.mojang:minecraft:${targetMc}"

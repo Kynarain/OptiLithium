@@ -26,7 +26,8 @@ First release. OptiLithium loads OptiFine and Lithium in the same Fabric client,
   `super()` call naming the class's real supertype, so Mixin failed the whole class — and with it OptiFine's
   `Reflector`, which is why the crash looked like an OptiFine bug. The fixer restores the supertype, the
   matching `super()` call and drops the Forge-only interface; both halves must move together, or the verifier
-  answers `VerifyError: Bad <init> method call`.
+  answers `VerifyError: Bad <init> method call`. **The same conflict is the only thing that breaks 26.1.2**,
+  so the fixer is shared and only its registration is per line.
 - **A corrected class-hierarchy resolver** in the frame-computing writer. `getCommonSuperClass` returned
   `java/lang/Object` for the ordinary case "one class extends the other" (`class_278 + class_284`, where
   `class_284` extends `class_278`), because every supertype set contains `Object` and was tested by
@@ -36,8 +37,16 @@ First release. OptiLithium loads OptiFine and Lithium in the same Fabric client,
 - Support for the whole obfuscated line: **1.20, 1.20.1, 1.20.2, 1.20.4, 1.20.6, 1.21.1, 1.21.3, 1.21.4,
   1.21.6, 1.21.7, 1.21.8, 1.21.9, 1.21.10 and 1.21.11**, each verified by launching a real client with both
   mods and reading the log (`tools/matrix-report.md`).
+- **The 26.x line as well: Minecraft 26.1.2**, verified the same way. This is a project of its own (`:v26`)
+  because 26.1 and newer ship unobfuscated — no Yarn mappings, no real intermediary, a different runtime
+  namespace, a different Loom flavour and its own Java requirement. The pipeline is shared: `shared/` holds
+  everything namespace independent and each line adds only its two mixins, its mixin config and its
+  `fabric.mod.json`. That is possible because no fixer holds a compiled reference to a game class — every
+  class name inside `patcher/fixes` is a string — so both fixer tables compile on both lines and the right one
+  is chosen at runtime from the namespace. `docs/LINES.md` has the full comparison.
 - A test rig (`test/`) that launches a release under a launcher-equivalent classpath and reports a verdict,
-  and tooling (`tools/`) that builds a profile per release, runs one, and sweeps the whole list.
+  and tooling (`tools/`) that builds a profile per release, runs one, and sweeps the whole list — now covering
+  both lines, including the per-release Java level (17 / 21 / 25).
 - `-Doptilithium.dumpFixed=<dir>` and `-Doptilithium.traceFrames=true`, without which the two failures above
   could not have been diagnosed: the class cache holds the state *before* the fixers, and the hierarchy
   resolver's answers are otherwise invisible.
@@ -60,8 +69,5 @@ First release. OptiLithium loads OptiFine and Lithium in the same Fabric client,
 - **1.21 is blocked by Lithium, not by OptiLithium.** Lithium's only build for the 1.21 family is made for
   1.21.1, and one of its mixins fails `net.minecraft.class_2614` (1.21's `HopperBlockEntity`, which OptiFine
   does not patch at all). OptiLithium + OptiFine alone reach the title screen on 1.21. Use 1.20.6 or 1.21.1.
-- **26.1.2 is not built here.** Minecraft 26.1 and newer ship unobfuscated, so there are no Yarn mappings and
-  the fixer table must address the game by official path instead of intermediary id. `docs/LINES.md` records
-  exactly what a second build flavour has to change.
 - **1.20.3 and 1.20.5 have no OptiFine build.** The project builds jars for them, but OptiFine publishes
   nothing to put next to them; the same is true of 1.21.2 and 1.21.5.

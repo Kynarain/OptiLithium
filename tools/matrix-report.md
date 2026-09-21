@@ -19,3 +19,4 @@ Produced by `tools/matrix.ps1` on 2026-09-21 with the jars built from this revis
 | 1.21.9 | TITLE SCREEN | 519 / 0 failed | yes | - |
 | 1.21.10 | TITLE SCREEN | 553 / 0 failed | yes | - |
 | 1.21.11 | TITLE SCREEN | 570 / 0 failed | yes | - |
+| 26.1.2 | TITLE SCREEN | 567 / 0 failed | yes | - |

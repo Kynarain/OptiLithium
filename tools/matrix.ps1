@@ -31,7 +31,15 @@ if (-not $ReportPath) { $ReportPath = Join-Path $here 'matrix-report.md' }
 # Java 17 JVM"), and the Java 17 bytecode target is applied by build.gradle's `javaVersions` table through
 # the Gradle toolchain, so building a Java 17 release on a Java 21 JVM is correct and was verified.
 $java17 = @('1.20', '1.20.1', '1.20.2', '1.20.3', '1.20.4')
-$gameJavaHome = if ($java17 -contains $Version) { 'C:\Program Files\Java\jdk-17' } else { 'C:\Program Files\Java\jdk-21' }
+# Releases that need Java 25 (26.1 and newer; Java 21 fails before the window appears). The JDK comes from
+# Gradle's own JDK store because 25 is not installed machine-wide - it is what the toolchain already uses.
+$java25 = @('26.1', '26.1.1', '26.1.2')
+$jdk25 = Join-Path $env:USERPROFILE '.gradle\jdks\eclipse_adoptium-25-amd64-windows.2'
+
+$gameJavaHome = if ($java17 -contains $Version) { 'C:\Program Files\Java\jdk-17' }
+	elseif ($java25 -contains $Version) { $jdk25 }
+	else { 'C:\Program Files\Java\jdk-21' }
+
 $buildJavaHome = 'C:\Program Files\Java\jdk-21'
 
 # OptiFine build and Lithium build per Minecraft version, as downloaded by the earlier fetch steps.
@@ -87,21 +95,30 @@ if (-not (Test-Path $LithiumJar)) { throw "Lithium jar missing: $LithiumJar" }
 $gameDir = Join-Path $testDir "run\m$Version"
 $log = Join-Path $gameDir 'rig-stdout.log'
 
+# The 26.x line is a project of its own (there is no -Pmc there and no mappings either), so the build command
+# and the output directory both differ. See docs/LINES.md.
+$is26 = $Version -like '26.*'
+$buildTask = if ($is26) { ':v26:build' } else { 'build' }
+$libsDir = if ($is26) { Join-Path $root 'v26\build\libs' } else { Join-Path $root 'build\libs' }
+
 # 1. build
 if (-not $SkipBuild) {
 	$env:JAVA_HOME = $buildJavaHome
 	Write-Host "== building OptiLithium for $Version"
-	& (Join-Path $root 'gradlew.bat') build "-Pmc=$Version" --console=plain 2>&1 |
+	$args = if ($is26) { @($buildTask, '--console=plain') } else { @($buildTask, "-Pmc=$Version", '--console=plain') }
+	& (Join-Path $root 'gradlew.bat') @args 2>&1 |
 		Select-String -Pattern "BUILD SUCCESSFUL|BUILD FAILED|error:|错误" | ForEach-Object { Write-Host "   $($_.Line)" }
-	$built = Join-Path $root "build\libs\OptiLithium-1.0.0+mc$Version.jar"
-	if (-not (Test-Path $built)) { throw "build produced no $built" }
-} else {
-	$built = Join-Path $root "build\libs\OptiLithium-1.0.0+mc$Version.jar"
 }
 
+$built = Join-Path $libsDir "OptiLithium-1.0.0+mc$Version.jar"
+if (-not (Test-Path $built)) { throw "no $built" }
+
 # 2. profile
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $here 'make-profile.ps1') -Version $Version 2>&1 |
-	ForEach-Object { Write-Host "   $_" }
+$mpArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $here 'make-profile.ps1'), '-Version', $Version)
+# The Fabric installer is built for Java 21+; the 26.x line's own JDK is 25, and using it here is what keeps
+# profile creation independent of which game JDK happens to be installed machine-wide.
+if ($is26) { $mpArgs += @('-JavaExe', (Join-Path $jdk25 'bin\java.exe')) }
+& powershell @mpArgs 2>&1 | ForEach-Object { Write-Host "   $_" }
 $profileId = "$Version-Fabric-0.19.5"
 
 # 3. launch

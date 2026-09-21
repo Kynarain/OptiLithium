@@ -71,6 +71,23 @@ Caused by: java.lang.NoClassDefFoundError: Could not initialize class net.optifi
 `class_2586` is `BlockEntity`; the mixin is Lithium's block-entity ticking support cache, and `Reflector` is
 OptiFine's — so a single failed mixin takes OptiFine down with it and the crash looks like an OptiFine bug.
 
+**The same conflict happens on the unobfuscated line, and there it is the only thing that breaks.** On 26.1.2
+the names differ and nothing else does:
+
+```
+Caused by: java.lang.RuntimeException: Mixin transformation of net.minecraft.world.level.block.entity.BlockEntity failed
+Caused by: InjectionError: Delegate constructor lookup failed for @Inject target on
+  lithium.mixins.json:minimal_nonvanilla.world.block_entity_ticking.support_cache.BlockEntityMixin
+  from mod lithium->@Inject::initSupportCache
+  (Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/core/BlockPos;
+   Lnet/minecraft/world/level/block/state/BlockState;Lorg/spongepowered/asm/mixin/injection/callback/CallbackInfo;)V
+```
+
+That is why `RestoreSuperConstructorFix` is in `shared/` and only its *registration* is per line: 26.1.2 is
+green with OptiFine + Lithium precisely because of it (567 patched classes, 0 failed). It is also the reason
+the last round of this port is small — with the fixer generalised, the 26.x line needed no new compatibility
+work at all, only a second Gradle project and the official-name mixins.
+
 **Cause.** Lithium injects into `BlockEntity`'s constructor with `ctor = true` and `@At("RETURN")`, a
 *delegate constructor* injection. Mixin implements those by generating a synthetic constructor whose body is
 `super()` plus a call to the handler, and it derives the per-constructor metadata from the real constructor —

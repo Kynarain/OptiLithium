@@ -1,0 +1,116 @@
+plugins {
+    // Minecraft 26.1 and newer ships unobfuscated, so this is Loom's non-remapping flavour: it applies no
+    // mappings and produces the jar exactly as compiled. The root project, which builds the obfuscated
+    // 1.20-1.21.11 line, uses the legacy `fabric-loom` id instead.
+    //
+    // No version here, deliberately: the root project puts fabric-loom (and its non-remapping flavour) on the
+    // build's classpath, and asking for it again WITH a version fails with "The request for this plugin could
+    // not be satisfied because the plugin is already on the classpath with an unknown version, so
+    // compatibility cannot be checked." The version lives in the root's plugins block, once.
+    id 'net.fabricmc.fabric-loom'
+}
+
+// The 26.x line, as a project of its own so that one repository builds both lines.
+//
+// This is the line where Minecraft is NOT obfuscated: official names are runtime names, the intermediary
+// artifact is the empty 0.0.0 placeholder and Yarn publishes nothing for 26.1.2 at all. So there is no
+// `mappings` dependency here, the runtime namespace is "official", and OptifineSetup skips the whole
+// official -> intermediary remap.
+//
+// Everything namespace independent is shared with the other line and compiled from ../shared; only the two
+// mixins and the mixin config come from line/official. Which fixer table is used is decided at runtime from
+// the namespace (see OptifineFixer) - both tables are in the shared tree and both compile on both lines.
+//
+//   .\gradlew :v26:build        -> build/libs/OptiLithium-<version>+mc26.1.2.jar
+def targetMc = project.minecraft_version.toString()
+
+version = "${project.mod_version_base}+mc${targetMc}"
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ["${rootDir}/shared", "${projectDir}/../line/official/java"]
+        resources.srcDirs = ["${projectDir}/../line/official/resources"]
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${targetMc}"
+
+    // Loader comes in as a plain dependency: the mod-augmented variants (modImplementation and friends)
+    // exist to remap a dependency into the development namespace, which the non-remapping flavour has no
+    // notion of.
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+
+    // All of these are provided at runtime by Fabric Loader / its launch libraries:
+    // ASM and Mixin are launch libraries, and tiny-remapper + mapping-io are shaded inside the loader jar
+    // (net.fabricmc.loader.impl.lib.tinyremapper / ...mappingio). Nothing is bundled into this mod.
+    compileOnly "org.ow2.asm:asm:${project.asm_version}"
+    compileOnly "org.ow2.asm:asm-tree:${project.asm_version}"
+    compileOnly "org.ow2.asm:asm-commons:${project.asm_version}"
+    compileOnly "org.ow2.asm:asm-analysis:${project.asm_version}"
+}
+
+// The release itself requires Java 25 (Java 21 fails before the window appears).
+def targetJavaVersion = 25
+def mixinCompatibilityLevel = "JAVA_" + targetJavaVersion
+
+// This line deliberately does NOT declare "fabric-renderer-api-v1:contains_renderer", unlike the obfuscated
+// line: on 26.1 Indigo is no longer a terrain renderer (Fabric API moved the terrain and submit-node
+// integration into fabric-renderer-api-v1 itself), so the key would do nothing useful, and Indigo
+// registering its own renderer is what RendererApiFallback expects here.
+def customMetadata = ""
+
+processResources {
+    inputs.property "version", project.version
+    inputs.property "minecraft_version", targetMc
+    inputs.property "loader_version", project.loader_version
+    inputs.property "mixin_compatibility_level", mixinCompatibilityLevel
+    inputs.property "optilithium_custom", customMetadata
+    filteringCharset "UTF-8"
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version,
+                "minecraft_version": targetMc,
+                "loader_version": project.loader_version,
+                "optilithium_custom": customMetadata,
+                // Same id as the obfuscated line on purpose: it is one mod, and the id is what gets it past
+                // Lithium's "breaks": {"optifabric": "*"} - Loader's solver matches that by id.
+                "optilithium_id": "optilithium",
+                "optilithium_name": "OptiLithium",
+                "optilithium_verbs": "patches and applies"
+    }
+
+    filesMatching("optilithium.mixins.json") {
+        expand "mixin_compatibility_level": mixinCompatibilityLevel
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.encoding = "UTF-8"
+    it.options.release.set(targetJavaVersion)
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+    }
+    withSourcesJar()
+}
+
+jar {
+    from(file("${rootDir}/LICENSE.txt")) {
+        rename { "${it}_${project.archives_base_name}" }
+    }
+}
+
+tasks.named("build") {
+    doFirst {
+        println "Building ${project.archives_base_name} ${project.version} (Minecraft ${targetMc}, unobfuscated," +
+                " Fabric Loader ${project.loader_version}, Java ${targetJavaVersion})"
+    }
+}

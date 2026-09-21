@@ -10,3 +10,17 @@ pluginManagement {
 
 rootProject.name = 'OptiLithium'
 
+// One repository, two release lines, because the mod is one mod and most of it is namespace independent.
+//
+//   root   the obfuscated line, Minecraft 1.20 through 1.21.11 (fabric-loom, takes -Pmc=<release>)
+//   :v26   the unobfuscated line, Minecraft 26.1.2 (net.fabricmc.fabric-loom, no mappings)
+//
+// Both compile from ../shared and add only their own mixins, mixin config and fabric.mod.json. See
+// docs/LINES.md for what differs and why they cannot be one project.
+//
+// The shared build values (archives_base_name, maven_group, mod_version_base, loader_version, asm_version)
+// are read from the root's gradle.properties by both projects, so a version bump goes through
+// release/version.ps1 and lands in one place. v26/gradle.properties carries only what is specific to that
+// line - the one release it targets.
+include 'v26'
+

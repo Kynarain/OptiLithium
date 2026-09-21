@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import net.fabricmc.loader.api.FabricLoader;
+
+import kynarain.cn.optilithium.mod.OptifineMappings;
 import kynarain.cn.optilithium.util.RemappingUtils;
 
 public class OptifineFixer {
@@ -30,10 +33,163 @@ public class OptifineFixer {
 		//contextual entry can resolve, are bridged to the name the game calls them by (see MissingOverrideFix).
 		registerGlobalFix(new MissingOverrideFix());
 
-		//This line addresses the game by its stable intermediary ids, which is what the obfuscated 1.21.x
-		//releases run on. (A second table, addressing the game by its official names, used to be registered
-		//here for the 26.x line; that line has its own branch and its own copy of this code now.)
-		registerIntermediaryNameFixes();
+		// WHICH TABLE IS USED IS DECIDED AT RUNTIME, from the namespace the game itself runs in.
+		//
+		// Both tables compile on both lines, and that is not an accident: no fixer holds a *compiled* reference
+		// to a game class - every class name inside patcher/fixes is a string (verified with a grep over the
+		// whole directory for `import net.minecraft.`). So `registerFix("class_2586", …)` in the obfuscated
+		// table is inert-but-loadable on 26.1.2, where its key becomes "net.minecraft.class_2586" and simply
+		// never matches a class name. The reverse holds for the official table on 1.20-1.21.11.
+		//
+		// The namespace is the authoritative signal, not the version string: OptifineSetup already keys its
+		// whole remap decision off the same call, because it is what decides whether the game's own class
+		// names are official (26.1+: no real intermediary exists, only the 0.0.0 placeholder) or intermediary
+		// (every obfuscated release).
+		String namespace = FabricLoader.getInstance().getMappingResolver().getCurrentRuntimeNamespace();
+
+		if (OptifineMappings.OFFICIAL.equals(namespace)) {
+			System.out.println("[OptiLithium] Runtime namespace is \"" + namespace
+					+ "\", so the official-name fixer table is the one that can match");
+
+			registerOfficialNameFixes();
+		} else {
+			System.out.println("[OptiLithium] Runtime namespace is \"" + namespace
+					+ "\", so the intermediary-id fixer table is the one that can match");
+
+			registerIntermediaryNameFixes();
+		}
+	}
+
+	/**
+	 * The registrations for the unobfuscated releases (Minecraft 26.1 and newer), where the runtime names are
+	 * the official ones.
+	 *
+	 * <p>These conflicts were found by running the offline harness and its scanners against 26.1.2; only what
+	 * the scanners report is listed, and every entry below is a real injection point that had gone missing.</p>
+	 */
+	private void registerOfficialNameFixes() {
+		//net/minecraft/client/resources/model/ModelManager (fabric-model-loading-api-v1 ModelManagerMixin)
+		//The obfuscated line's entry for this class (class_1092 / method_65750) is the same conflict in a
+		//different shape: here the lambda keeps its name and descriptor but the recompile dropped the Pair.of
+		//call the @At point needs - vanilla has one, OptiFine's body has none, so the injection has no
+		//instruction to land on.
+		registerFix("net/minecraft/client/resources/model/ModelManager",
+				new RestoreVanillaMethodsFix(true, "lambda$loadBlockModels$2"));
+
+		//net/minecraft/client/multiplayer/ClientChunkCache (fabric-lifecycle-events-v1 ClientChunkCacheMixin)
+		//The obfuscated line's class_631 / method_16020 entry by its official names: OptiFine creates its own
+		//net.optifine.ChunkOF instead of a LevelChunk, so the mixin's @At(value = "NEW", target = "LevelChunk")
+		//point is gone and the whole class fails to transform.
+		registerFix("net/minecraft/client/multiplayer/ClientChunkCache",
+				new ObjectCreationPointFix("net/minecraft/world/level/chunk/LevelChunk", "net/optifine/ChunkOF", "replaceWithPacketData"));
+
+		//net/minecraft/client/renderer/LevelRenderer (fabric-renderer-api-v1 LevelRendererMixin.hasMaterialFlagProxy)
+		//OptiFine reduced the vanilla extractBlockOutline to a thin wrapper forwarding to its own three-argument
+		//overload, so the vanilla body - and the call the mixin's @Redirect needs - is gone. The vanilla body
+		//goes back, and OptiFine's now-unused overload goes away with it: the mixin names this method without a
+		//descriptor, and two methods with that name make MixinExtras fail to build the local-variable context
+		//(LVTGeneratorError), which fails the class.
+		registerFix("net/minecraft/client/renderer/LevelRenderer",
+				new RestoreVanillaMethodsFix(true, "extractBlockOutline"));
+		registerFix("net/minecraft/client/renderer/LevelRenderer",
+				new DropVanillaAbsentOverloadsFix("extractBlockOutline"));
+
+		//net/minecraft/client/renderer/ScreenEffectRenderer (fabric-renderer-api-v1 ScreenEffectRendererMixin)
+		//Its onReturnGetInWallBlockState takes a @Local BlockPos$MutableBlockPos, and vanilla's
+		//getViewBlockingState keeps one in scope while OptiFine's recompiled body does not - so the callback
+		//cannot be built and the class fails to transform. The vanilla body has exactly the layout the mixin
+		//was written against.
+		registerFix("net/minecraft/client/renderer/ScreenEffectRenderer",
+				new RestoreVanillaMethodsFix(true, "getViewBlockingState"));
+
+		//net/minecraft/client/renderer/item/CuboidItemModelWrapper (fabric-renderer-api-v1)
+		//The obfuscated line's class_10430 / method_65584 entry, on the class that replaced BlockModelWrapper.
+		//Its update() @Inject(at = RETURN) needs locals OptiFine's recompiled body no longer has, so item
+		//models fail to bake and the item textures disappear.
+		//
+		//The drop below is not optional: with two methods of that name left in the class, MixinExtras cannot
+		//build the local-variable context for the handler ("LVTGeneratorError: Could not locate method metadata
+		//for update generating LVT") and every item model fails to transform.
+		registerFix("net/minecraft/client/renderer/item/CuboidItemModelWrapper",
+				new RestoreVanillaMethodsFix(true, "update"));
+		registerFix("net/minecraft/client/renderer/item/CuboidItemModelWrapper",
+				new DropVanillaAbsentOverloadsFix(true, "update"));
+
+		//net/minecraft/client/renderer/chunk/SectionCompiler (fabric-renderer-api-v1 SectionCompilerMixin)
+		//Two of its handlers inject into the compile loop: one wraps ModelBlockRenderer.tesselateBlock, the
+		//other sits before BlockPos.betweenClosed. Neither call survives in OptiFine's recompiled body. The
+		//vanilla body goes back, and OptiFine's own compile overload has its name moved aside rather than
+		//removed: it is public and the rebuild task calls it, so removing it is a NoSuchMethodError on the
+		//first chunk rebuild. Leaving both names in place is no good either - the mixin names compile without a
+		//descriptor and then scans 0 targets.
+		registerFix("net/minecraft/client/renderer/chunk/SectionCompiler",
+				new RestoreVanillaMethodsFix(true, "compile"));
+		registerFix("net/minecraft/client/renderer/chunk/SectionCompiler",
+				new DropVanillaAbsentOverloadsFix(true, true, "compile"));
+
+		//...and the caller follows it to the new name. Only the invoked name changes, so no stack map or
+		//injection offset moves.
+		registerFix("net/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection$RebuildTask",
+				new CallSiteRedirectFix("net/minecraft/client/renderer/chunk/SectionCompiler", "compile",
+						"(Lnet/minecraft/core/SectionPos;Lnet/optifine/override/ChunkCacheOF;Lcom/mojang/blaze3d/vertex/VertexSorting;"
+								+ "Lnet/minecraft/client/renderer/SectionBufferBuilderPack;III)Lnet/minecraft/client/renderer/chunk/SectionCompiler$Results;",
+						"optilithium$compile",
+						"OptiFine's compile overload was renamed so the mixin's descriptor-less name is unambiguous again"));
+
+		//Fabric's FRAPI hook for terrain models injects into the vanilla loop (at BlockPos.betweenClosed) and
+		//redirects the block tesselation call in it. OptiFine's own overload has no such loop, so that hook now
+		//lives in the restored method above, which nothing calls: a model's emitQuads - better grass, and
+		//anything else that needs the world around a block - was never asked for anything and its geometry was
+		//simply absent. The call inside OptiFine's method is pointed at the bridge instead, which does what
+		//Fabric's hook would have done.
+		registerFix("net/minecraft/client/renderer/chunk/SectionCompiler", new FrapiTesselateBridgeFix());
+
+		//net/minecraft/client/renderer/feature/BlockFeatureRenderer (fabric-renderer-api-v1)
+		//The moving-block path: beforeInitBlockRenderer hands FRAPI's own AltModelBlockRenderer and QuadEmitter
+		//to renderMovingBlockSubmits through @Local, so on the first moving block the game calls
+		//Renderer.get().altModelBlockRenderer(...) - which finds the placeholder registered by
+		//RendererApiFallback, whose whole purpose is to refuse to draw. This is the obfuscated line's
+		//class_11681 / method_72998 entry by its official names: OptiFine does not patch this class, so it is
+		//taken over on our own, the method the hook injects into is moved aside as dead code carrying the
+		//vanilla body (the handler's @Local sugar needs its locals), and the real method keeps drawing through
+		//OptiFine.
+		registerExtraClass("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+				new StubInjectionTargetFix("renderMovingBlockSubmits", null, "optilithium$movingBlocks"));
+		registerExtraClass("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+				new CallSiteRedirectFix("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+						"renderMovingBlockSubmits", null, "optilithium$movingBlocks",
+						"the hook has to inject into a copy nobody calls, and the real method still has to draw moving blocks"));
+
+		//...and the same for the ordinary block model path. Its onReturnRenderBlockModelSubmits ends by asking
+		//the renderer for a QuadEmitter to put FRAPI's own quads through, which is why it had to be inert while
+		//the only renderer around was a placeholder returning inert objects: the quads went nowhere and
+		//OptiFine drew the world.
+		registerExtraClass("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+				new StubInjectionTargetFix("renderBlockModelSubmits", null, "optilithium$blockModels"));
+		registerExtraClass("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+				new CallSiteRedirectFix("net/minecraft/client/renderer/feature/BlockFeatureRenderer",
+						"renderBlockModelSubmits", null, "optilithium$blockModels",
+						"the hook has to inject into a copy nobody calls, and the real method still has to draw block models"));
+
+		//net/minecraft/world/level/block/entity/BlockEntity
+		//
+		//THE LITHIUM CONFLICT, and the reason this mod exists. OptiFine's patcher swaps the class's
+		//*supertype* for Forge's net.minecraftforge.common.capabilities.CapabilityProvider$BlockEntities and
+		//rewrites the constructor's super() call to match. Lithium injects into that constructor with
+		//ctor = true, whose delegate-constructor lookup needs a super() call naming the class's real supertype,
+		//so Mixin fails the whole class - and with it OptiFine's Reflector, which is why the crash looks like an
+		//OptiFine bug rather than a Lithium one. Measured on 26.1.2:
+		//
+		//   Mixin transformation of net.minecraft.world.level.block.entity.BlockEntity failed
+		//   InjectionError: Delegate constructor lookup failed for @Inject target on
+		//   lithium.mixins.json:...support_cache.BlockEntityMixin ... @Inject::initSupportCache
+		//     (Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/core/BlockPos;
+		//      Lnet/minecraft/world/level/block/state/BlockState;...CallbackInfo;)V
+		//
+		//This is the obfuscated line's class_2586 entry by its official names; the conflict is identical there,
+		//which is why the fixer is shared and only the registration is per line.
+		registerFix("net/minecraft/world/level/block/entity/BlockEntity",
+				new RestoreSuperConstructorFix("(Lnet/minecraft/world/level/block/entity/BlockEntityType;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;)V"));
 	}
 
 	/** The registrations for the obfuscated releases, addressed by intermediary ids. */

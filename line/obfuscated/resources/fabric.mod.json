@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "${optilithium_id}",
+  "version": "${version}",
+
+  "name": "${optilithium_name}",
+  "description": "Loads OptiFine into Fabric alongside Lithium. Put the OptiFine jar for ${minecraft_version} into the mods folder next to this mod; ${optilithium_name} ${optilithium_verbs} it at runtime. OptiFine itself is not bundled or redistributed.",
+  "authors": [
+    "kynarain",
+    "Modmuss50",
+    "Chocohead"
+  ],
+  "contact": {
+    "homepage": "https://github.com/Kynarain/OptiLithium",
+    "sources": "https://github.com/Kynarain/OptiLithium"
+  },
+  "license": "MPL-2.0",
+  "icon": "assets/optilithium/icon.png",
+  "environment": "client",
+
+  "entrypoints": {
+    "preLaunch": [
+      "kynarain.cn.optilithium.Optilithium"
+    ]
+  },
+
+  "mixins": [
+    {
+      "config": "optilithium.mixins.json",
+      "environment": "client"
+    }
+  ],
+
+  "custom": {${optilithium_custom}
+  },
+
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "${minecraft_version}"
+  },
+
+  "conflicts": {
+    "sodium": "*"
+  }
+}
