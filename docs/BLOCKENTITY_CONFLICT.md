@@ -59,6 +59,28 @@ Two things follow, and both were confirmed by experiment:
 
 There is no arrangement in which both hold while the supertype is the thing being changed.
 
+## The finding that narrows it to one thing
+
+Tracing Mixin's rule against the actual bytecode shows **which half of the `&&` fails**, and it is not the
+owner comparison:
+
+- `targetName` is `net/minecraft/class_2586` and `targetSuperName` is `ClassInfo.getSuperName()`, which for
+  this class is the Forge supertype — so an owner test against the patched constructor's super() call would
+  **match**;
+- what fails is `newCount > 0`. `BlockEntity`'s constructor contains no `NEW` at all, and it cannot: the first
+  `NEW` in any correctly compiled constructor comes after the super() call, whereas the scan would need it
+  before. There is no super() call in valid class-file bytecode that has a `NEW` ahead of it on the same
+  path — such a constructor could not be written in Java or produced by javac.
+
+So the condition Mixin imposes here cannot be satisfied by any rearrangement of `BlockEntity`'s own
+constructor. That is why experiments 1 and 2 both failed with no change: neither could change `newCount`.
+`ClassInfo.getSuperName()` is read from the class node Mixin was given, so the Forge name is what Mixin sees,
+and the `NEW` requirement is unsatisfiable regardless.
+
+This is worth stating plainly because it removes a whole family of attempted fixes: nothing done to
+`BlockEntity`'s constructor, its supertype, or the order of its instructions can make this lookup succeed.
+The delegate has to be found somewhere the scan can see a `NEW`, or the injection must not be looked up at all.
+
 ## What is left to try
 
 Ideas not yet ruled out, in the order worth attempting:
