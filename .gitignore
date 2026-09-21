@@ -41,7 +41,7 @@ dist/
 build-log.txt
 *.log
 
-# release/publish.ps1 閻㈢喐鍨氶惃鍕絹娴溿倛娴囬懡?閸欘亝妲搁悾娆愩€傞悽?
+# release/publish.ps1 闁汇垻鍠愰崹姘舵儍閸曨剙绲瑰ù婧垮€涘ù鍥嚒?闁告瑯浜濆Σ鎼佹偩濞嗘劑鈧倿鎮?
 release/tmp/
 
 # Compiled helper tools (tools/*.java are the source)
@@ -51,3 +51,6 @@ tools/*.class
 tools/matrix-report.md
 tools/sweep.log
 tools/one-*.log
+
+# A Lithium config file that a run dropped in the repository root
+config/
