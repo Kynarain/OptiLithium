@@ -1,0 +1,10 @@
+﻿### 1.21.7 started 03:57:22
+1.21.7 : IN WORLD  prepared=500 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=16  rigNoise=0  -
+### 1.21.7 finished 03:59:11 after 109s
+### 1.21.8 started 03:59:11
+1.21.8 : NO LAUNCH  prepared=516 / 0 failed  inWorld=no  shaderpack=yes  programs=0  lithium=yes  crashes=1  threadErrors=0  rigNoise=0  NoSuchMethodError: 'void net.optifine.shaders.MultiTexID.<init>(int, int, int)'
+### 1.21.8 finished 04:05:45 after 395s
+### 1.21.9 started 04:05:45
+1.21.9 : NO LAUNCH  prepared=519 / 0 failed  inWorld=no  shaderpack=no  programs=0  lithium=yes  crashes=1  threadErrors=0  rigNoise=0  NoSuchMethodError: 'void net.optifine.shaders.MultiTexID.<init>(int, int, int)'
+### 1.21.9 finished 04:12:18 after 392s
+### 1.21.10 started 04:12:18

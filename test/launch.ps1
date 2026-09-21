@@ -20,6 +20,12 @@ param(
 	[string[]]$Mods = @(),
 	[string]$JavaHome = "C:\Program Files\Java\jdk-21",
 	[int]$MemoryMb = 2048,
+	# Extra JVM properties. Split on commas for the same reason -Mods is: a caller that comes through a shell
+	# hands a [string[]] over as ONE comma-joined element, and two properties then arrive as a single argument
+	# whose value is "true -Dsecond=..." - a real -D that sets the first property to the wrong string and never
+	# sets the second. Silence is the whole problem: the JVM accepts it, so the run looks normal and the switch
+	# simply has no effect. Measured with -Doptilithium.traceFixes=true,-Doptilithium.traceClasses=10868, which
+	# produced traceFixes="true -Doptilithium.traceClasses=10868" and traceClasses=null.
 	[string[]]$ExtraJvm = @(),
 	[string[]]$ExtraGameArgs = @(),
 	# Load this world (a directory name under <game dir>\saves) instead of stopping at the title screen. A name
@@ -36,6 +42,17 @@ $ErrorActionPreference = 'Continue'
 
 # '@(...)' rather than a bare list so -Mods 'a;b' and -Mods a,b both work.
 $Mods = @($Mods | ForEach-Object { $_ -split ';' } | Where-Object { $_ })
+# Same treatment for the extra JVM properties, minus the ';' case: a JVM property value may contain a semicolon,
+# and an argument that arrives as one comma-joined element is the one case that actually happens here.
+# Split on commas OR spaces. A caller that comes through a shell hands a [string[]] over as ONE element whose
+# text is the elements joined by a comma or a space, and each additional property then disappears into the first
+# one's value: -Doptilithium.traceFixes=true,-Doptilithium.traceClasses=10868 produced traceFixes="true
+# -Doptilithium.traceClasses=10868" and traceClasses=null. No error, no property, no output - measured with a
+# probe class, then again here, where this line is the one that finally made the trace flags arrive.
+$ExtraJvm = @($ExtraJvm | ForEach-Object { $_ -split '[, ]+' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if ($ExtraJvm.Count -gt 1 -and (Get-Command Write-Host -ErrorAction SilentlyContinue)) {
+	Write-Host "  extraJvm : $($ExtraJvm.Count) properties: $($ExtraJvm -join ' | ')"
+}
 
 $versionsDir = Join-Path $McRoot 'versions'
 $librariesDir = Join-Path $McRoot 'libraries'

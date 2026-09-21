@@ -12,7 +12,14 @@ param(
 	[string[]]$Mods = @(),
 	[string]$JavaHome = "C:\Program Files\Java\jdk-21",
 	[int]$MemoryMb = 2048,
-	[string[]]$ExtraJvm = @(),
+	# Extra JVM properties. In-band forms do not survive the shell: an array argument is flattened to
+	# comma-joined text by the time it reaches a native child, and ';' and '|' are rewritten (to a statement
+	# separator and to a space respectively) before the parameter ever binds. Both failure modes are silent -
+	# the JVM gets no property and nothing reports an error, so a run looks exactly like one where the switch
+	# was ignored. A file has no separator to lose.
+	[string]$ExtraJvm = "",
+	# One JVM property per line, read verbatim.
+	[string]$ExtraJvmFile = "",
 	[string[]]$ExtraGameArgs = @(),
 	[string]$QuickPlayWorld = "",
 	[switch]$Fresh,
@@ -24,6 +31,14 @@ param(
 $ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Mods = @($Mods | ForEach-Object { $_ -split ';' } | Where-Object { $_ })
+$ExtraJvm = @($ExtraJvm -split ';' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+if ($ExtraJvmFile) {
+	if (-not (Test-Path -LiteralPath $ExtraJvmFile)) { throw "no extra JVM args file at $ExtraJvmFile" }
+	# Read with ReadAllLines and no BOM: a leading BOM would become part of the first property's name, which
+	# the JVM accepts silently as a property nobody reads.
+	$ExtraJvm += [System.IO.File]::ReadAllLines($ExtraJvmFile) |
+		ForEach-Object { $_.Trim() } | Where-Object { $_ }
+}
 if (-not $GameDir) { $GameDir = Join-Path $here "run\$VersionId" }
 if (-not $LogFile) { $LogFile = Join-Path $GameDir 'console.log' }
 New-Item -ItemType Directory -Force $GameDir | Out-Null

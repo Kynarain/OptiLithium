@@ -196,6 +196,12 @@ public class OptifineFixer {
 		// without it the world loads and then logs a NoSuchMethodError per saved block entity and drops its NBT.
 		registerFix("net/minecraft/world/level/block/entity/BlockEntity", new NeutraliseCapabilityCallsFix("getCapabilities"));
 
+		//net/minecraft/client/renderer/texture/AbstractTexture
+		//OptiFine adds its MultiTexID accessors here and on GpuTexture, but the field that backs them is declared
+		//one level below, in GlTexture - and never initialised. The registration is on GlTexture, by its
+		//retained Mojang name; see the obfuscated table's entry and InitMultiTexIdFix.
+		registerFix("com/mojang/blaze3d/opengl/GlTexture", new InitMultiTexIdFix("26.x"));
+
 		// ...and the members that came with that supertype go back onto the class itself. Without this the world
 		// loads and then logs a NoSuchMethodError for every saved block entity whose NBT is read - 264 of them in
 		// one 1.21.11 session, each one a block entity whose data was dropped instead of loaded. See
@@ -212,6 +218,18 @@ public class OptifineFixer {
 		//net/minecraft/client/render/block/BlockModelRenderer$AmbientOcclusionCalculator
 		registerFix("class_778$class_780", new AmbientOcclusionCalculatorFix());
 
+		//net/minecraft/server/world/ChunkTicketManager (lithium ChunkTicketManagerMixin)
+		//The same "inlined helper" shape as the Fabric API entries above, but the caller is Lithium:
+		//
+		//   @Redirect annotation on useLithiumSortedArraySet could not find any targets matching
+		//   Lnet/minecraft/class_3204;method_14041(J)Lnet/minecraft/class_4706; in net/minecraft/class_3204
+		//
+		//OptiFine's recompile inlined this private helper away on 1.20.6, so the point Lithium redirects is
+		//simply not there and Mixin fails the whole class, which takes the world load with it. Putting the
+		//vanilla body back gives the redirect its target; OptiFine's own code no longer calls the helper, so
+		//nothing else changes.
+		registerFix("class_3204", new RestoreVanillaMethodsFix("method_14041"));
+
 		//net/minecraft/client/Keyboard
 		//1.21.11 rewrote the key dispatch: the methods upstream reverted (method_1454/1458/1473 and the
 		//five argument method_1466) no longer exist in the game at all, so there is nothing left to revert there.
@@ -222,6 +240,24 @@ public class OptifineFixer {
 
 		//net/minecraft/client/texture/SpriteAtlasTexture
 		registerFix("class_1059", new SpriteAtlasTextureFix());
+
+		//com/mojang/blaze3d/opengl/GlTexture - the class, not an id: this is where OptiFine puts its MultiTexID
+		//field (verified: of the five patched classes that mention that type, only class_10868 and
+		//com/mojang/blaze3d/textures/GpuTexture declare a member, and only class_10868 has the field).
+		//
+		//OptiFine never initialises it, and its own ShadersTex.initDynamicTextureNS dereferences the result of
+		//getMultiTexID() straight away - so with a shader pack loaded the client dies on the FIRST dynamic
+		//texture it creates, during game initialisation, before the title screen. See InitMultiTexIdFix.
+		//
+		//BOTH NAMES, and that is required rather than tidy. This class keeps its Mojang name at runtime but its
+		//intermediary id is what the patched class is actually called here, and RemappingUtils cannot bridge the
+		//two: it maps intermediary ids and returns anything else unchanged, so registering only the Mojang path
+		//gave the key "com/mojang/blaze3d/opengl/GlTexture" while the class being patched is named
+		//"net/minecraft/class_10868". The fixer then never ran, and nothing in the log said so - the pipeline
+		//printed "Prepared 487 patched classes (0 skipped, 0 failed)" and the crash was identical, which reads
+		//as "the fix does not work". Asking the resolver for the id instead is worse still: it invents
+		//"net/minecraft/GlTexture", a name that does not exist anywhere.
+		registerFix("class_10868", new InitMultiTexIdFix("1.21.x"));
 
 		//net/minecraft/client/particle/ParticleManager
 		registerFix("class_702", new ParticleManagerFix());
@@ -394,6 +430,39 @@ public class OptifineFixer {
 		//that keep their Mojang name (com/mojang/...), which the lookup asks for verbatim.
 		String key = className.indexOf('/') >= 0 ? className : RemappingUtils.getClassName(className);
 		classFixes.computeIfAbsent(key, s -> new ArrayList<>()).add(classFixer);
+
+		// A Mojang-named class has to be registered under BOTH names, and leaving that out is not a no-op - it is
+		// a fixer that never runs, with nothing in the log to say so.
+		//
+		// RemappingUtils maps intermediary ids and returns its input unchanged for everything else, so
+		// "com/mojang/blaze3d/opengl/GlTexture" came back as that same path while the class being patched is
+		// named "net/minecraft/class_10868" - the registration was inert on the whole obfuscated line. The two
+		// names cannot be told apart by shape alone (a class_ prefix would work, but the 26.x line patches
+		// classes whose intermediary-looking ids are also absent from the mappings), so this costs one lookup:
+		// ask the resolver for the INTERMEDIARY name and register that too whenever it differs.
+		String viaMappings = RemappingUtils.getClassName(className.indexOf('/') >= 0
+				? className.substring(className.lastIndexOf('/') + 1)
+				: className);
+
+		if (!viaMappings.equals(key) && viaMappings.indexOf('/') >= 0) {
+			// Registered under the intermediary name, but never twice: on a release where both names resolve to the
+			// same key the fixer would otherwise run twice.
+			classFixes.computeIfAbsent(viaMappings, s -> new ArrayList<>()).add(classFixer);
+
+			if (Boolean.getBoolean("optilithium.traceFixes")) {
+				System.out.println("[OptiLithium] fixer registered under two names: '" + key + "' and '" + viaMappings + "'");
+			}
+		}
+
+		// A registration whose key never equals a class name is inert, and nothing said so. Two silent failure
+		// modes hide here: RemappingUtils returns its input unchanged when the mappings do not know the id (and
+		// the resolver being installed is not the same thing as its mappings covering every entry), and a typo
+		// in an official path looks exactly like a release where the fixer is simply not needed. Printing the
+		// computed key is what tells those apart from "the fixer ran and decided not to change anything".
+		if (Boolean.getBoolean("optilithium.traceFixes")) {
+			System.out.println("[OptiLithium] fixer registered: '" + className + "' -> key '" + key + "' as "
+					+ classFixer.getClass().getSimpleName());
+		}
 	}
 
 	/** A class OptiFine does not patch, but that still needs one of our fixers (Fabric API injects into it). */

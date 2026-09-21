@@ -1,4 +1,4 @@
-# Walks every Minecraft release that has both an OptiFine build and a Lithium build through
+﻿# Walks every Minecraft release that has both an OptiFine build and a Lithium build through
 # tools\matrix.ps1, which builds the jar, launches the client with all three mods, reads the log and
 # appends a row to tools\matrix-report.md.
 #

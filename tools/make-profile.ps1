@@ -1,4 +1,4 @@
-# Creates a Fabric profile for one Minecraft version, so the rig can launch that release.
+﻿# Creates a Fabric profile for one Minecraft version, so the rig can launch that release.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\make-profile.ps1 -Version 1.20
 #

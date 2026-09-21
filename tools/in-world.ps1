@@ -19,6 +19,11 @@ param(
 	[string]$Scratch = "C:\Users\kynar\IdeaProjects\scratch",
 	[int]$Seconds = 320,
 	[switch]$NoShader,
+	# Turn on OptiFine's verbose shader logging. Without it "No shaderpack loaded." is the only line a shader
+	# failure produces, and the reason (which pack names OptiFine saw, and what it compared them against) is
+	# never printed - so a pack that the game simply does not offer to the shader subsystem looks identical to
+	# one that was rejected.
+	[switch]$ShaderDebug,
 	# Extra JVM properties, e.g. an experiment switch on the fixers.
 	[string[]]$ExtraJvm = @()
 )
@@ -27,6 +32,16 @@ $ErrorActionPreference = 'Continue'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $root = Split-Path -Parent $here
 $testDir = Join-Path $root 'test'
+
+# This file MUST keep its UTF-8 BOM: the default world name below is Chinese, and without the BOM PowerShell
+# reads the script as ANSI, so the path becomes mojibake ("鏂扮殑涓栫晫"), Copy-Item reports PathNotFound, and every
+# release in a sweep fails in four seconds with "the world was not copied". That is exactly what happened when
+# an edit tool rewrote this file and stripped the BOM - and because the message names the mangled path, it
+# looks like a missing world rather than an encoding problem. Fail loudly, naming the real cause.
+$selfBytes = [System.IO.File]::ReadAllBytes($PSCommandPath)
+if (-not ($selfBytes[0] -eq 0xEF -and $selfBytes[1] -eq 0xBB -and $selfBytes[2] -eq 0xBF)) {
+	throw "$PSCommandPath lost its UTF-8 BOM, so the Chinese world path below would be read as ANSI. Rewrite the file as UTF-8 WITH BOM before running it."
+}
 
 $java17 = @('1.20', '1.20.1', '1.20.2', '1.20.3', '1.20.4')
 $java25 = @('26.1', '26.1.1', '26.1.2')
@@ -58,7 +73,12 @@ $lithium = @{
 
 $is26 = $Version -like '26.*'
 $libsDir = if ($is26) { Join-Path $root 'v26\build\libs' } else { Join-Path $root 'build\libs' }
-$built = Join-Path $libsDir "OptiLithium-1.0.0+mc$Version.jar"
+# Prefer the per-release copy made by tools/build-all.ps1, when one exists.
+#
+# build/libs holds only the LAST release that was built, so measuring release A after building release B would
+# silently test B's jar against A's game - and the result would look like a real failure for A.
+$staged = Join-Path $root "build\all-jars\OptiLithium-1.0.0+mc$Version.jar"
+$built = if (Test-Path $staged) { $staged } else { Join-Path $libsDir "OptiLithium-1.0.0+mc$Version.jar" }
 $OptiFineJar = Join-Path $Scratch "optifine\$($optifine[$Version])"
 $LithiumJar = Join-Path $Scratch "lithium\$($lithium[$Version])"
 
@@ -102,7 +122,7 @@ if (-not $NoShader) {
 		"shaderPack=$ShaderPackName", 'oldLighting=false', 'shadowTerrain=true', 'shadowEntities=true',
 		'shadowBlockEntities=true', 'shadowTranslucent=true', 'shadowSky=false', 'shadowSunMoon=true',
 		'shadowClouds=true', 'shadowUnderwater=true', 'shadowVoid=false', 'shadowCulling=true',
-		'shaderPackDebug=false')
+		"shaderPackDebug=$(if ($ShaderDebug) { 'true' } else { 'false' })")
 	[System.IO.File]::WriteAllLines("$gameDir\optionsshaders.txt", $cfg, $enc)
 }
 
@@ -113,7 +133,30 @@ Start-Sleep 2
 
 $mods = @($built, $OptiFineJar, $LithiumJar) -join "','"
 # Extra JVM properties are passed through so an experiment switch can be flipped without rebuilding the jar.
-$jvmArgs = if ($ExtraJvm.Count) { " -ExtraJvm '" + ($ExtraJvm -join "','") + "'" } else { "" }
+#
+# THE SPLIT IS THE FIX, and it is the same trick -Mods uses two lines up: $ExtraJvm does NOT arrive as an array
+# but as ONE string. Measured, by handing '-Da','-Db' to a script that reports its own parameter: PowerShell
+# joins the elements before the native boundary, and the callee receives "-Da,-Db" as a single element. (The
+# separator is a comma in that probe and a space when the call goes through the -Command string built below, so
+# both are split.)
+#
+# Every in-band alternative was tried, and each fails the same silent way - no property reaches the JVM, no error
+# is raised, and the run is indistinguishable from one where the switch was ignored. That cost four tracing runs
+# which printed nothing at all:
+#   -ExtraJvm '-Da','-Db'   joined to "-Da,-Db" (or "-Da -Db") and bound as ONE element
+#   @('-Da','-Db')          same: the @() is consumed before the child ever sees an array
+#   ';' as the separator    consumed as a statement separator, so the child never binds -ExtraJvm at all
+#   '|' as the separator    rewritten to a space: the JVM received "-Da=true -Db=false" as one argument
+#   \' escapes              stay literal, so the parameter binds to the character "'"
+#   a file, one per line    arrives joined too - the same one-argument problem one step later
+$jvmArgList = @(@($ExtraJvm) | ForEach-Object { $_ -split '[, ]+' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$jvmArgs = ""
+
+if ($jvmArgList.Count) {
+	$jvmArgsFile = Join-Path $gameDir 'extra-jvm-args.txt'
+	[System.IO.File]::WriteAllLines($jvmArgsFile, [string[]]$jvmArgList, (New-Object System.Text.UTF8Encoding($false)))
+	$jvmArgs = " -ExtraJvmFile '$jvmArgsFile'"
+}
 $cmd = "& { . '$testDir\run-version.ps1' -VersionId '$Version-Fabric-0.19.5' -GameDir '$gameDir'" +
 	" -Seconds $Seconds -Detach -JavaHome '$gameJavaHome' -QuickPlayWorld 'RigWorld' -Mods '$mods'$jvmArgs }"
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -Command $cmd *> (Join-Path $gameDir 'launch.log')
@@ -158,16 +201,45 @@ $errors = @()
 foreach ($p in @('Mixin transformation of (\S+) failed','NoSuchMethodError: ''([^\r\n]{0,90})','VerifyError','Could not initialize class (\S+)')) {
 	foreach ($h in ([regex]::Matches($all, $p) | Select-Object -First 1)) { $errors += $h.Value }
 }
-# Logged-but-survived errors are counted separately from the fatal ones above. A NoSuchMethodError raised on
-# the server thread does not stop the game - it is caught, logged, and the affected piece of work is skipped -
-# but it is still a defect, and folding it into the crash bucket would have hidden it. That is exactly how the
-# CapabilityDispatcher problem below stayed invisible through a whole round of title-screen verification.
-$logged = ([regex]::Matches($all, '\[Server thread/ERROR\]|\[Render thread/ERROR\]')).Count
+# Logged-but-survived errors are counted separately from the fatal ones above, and the two the RIG ITSELF
+# causes are subtracted first - otherwise they read as product defects:
+#
+#   "Failed to verify authentication" (401)   the rig launches with --accessToken 0 and a fake uuid, so every
+#                                             release logs this, including the ones that work;
+#   "Failed to load random sequence ..."      the rig hands an older release a world written by a newer one,
+#                                             so the older release has no salt for a random sequence it never
+#                                             wrote. The suffix varies (salt, include_world_seed, sequences,
+#                                             include_sequence_id), so only the prefix is matched.
+#
+# What is left is the class of error that matters: something the mod's own bytecode produced on the server or
+# render thread while the world was running. The CapabilityDispatcher defect was exactly that - around 200 per
+# world load - and folding it into the crash bucket would have hidden it.
+#
+# Matching is -like over the whole line, NOT -match against an escaped pattern. Both log files are read, so each
+# event appears twice; with a one-token pattern ("...random sequence salt") the sibling lines fell through and
+# a clean 1.20 run measured as threadErrors=6 rigNoise=4. A noise filter that half-works reports rig noise as a
+# product defect, which is the expensive direction to be wrong in.
+$rigNoise = @(
+	'Failed to verify authentication',
+	'Failed to load random sequence',
+	'authentication error with message',
+	'Failed to fetch user properties',
+	'Could not authorize you against Realms server',
+	"Couldn't connect to realms",
+	'Failed to fetch Realms feature flags'
+)
+$threadErrorLines = @(($all -split "`r?`n") | Where-Object { $_ -match '\[Server thread/ERROR\]|\[Render thread/ERROR\]' })
+$mine = @($threadErrorLines | Where-Object {
+	$line = $_
+	-not ($rigNoise | Where-Object { $line -like "*$_*" })
+})
+$logged = $mine.Count
+$noise = $threadErrorLines.Count - $logged
 $errText = if ($errors.Count) { ($errors | Select-Object -Unique) -join ' | ' } else { '-' }
 $lith = if ($all -match 'Loaded configuration file for Lithium') { 'yes' } else { 'no' }
 
 "$Version : $verdict  prepared=$prepText  inWorld=$(if ($all -match 'Preparing spawn area') { 'yes' } else { 'no' })  " +
-	"shaderpack=$shaderPack  programs=$programs  lithium=$lith  crashes=$crashes  threadErrors=$logged  $errText"
+	"shaderpack=$shaderPack  programs=$programs  lithium=$lith  crashes=$crashes  threadErrors=$logged  rigNoise=$noise  $errText"
 
 # stop the client if it is still running
 $pidFile = Join-Path $gameDir 'rig.pid'

@@ -112,6 +112,13 @@ public class OptifineInjector {
 					+ OptifineMappings.describe(renames));
 		}
 
+		// Two passes, and the split is load-bearing rather than cosmetic.
+		//
+		// A fixer can need two different classes in a fixed order: InitMultiTexIdFix patches the game's texture
+		// class (where OptiFine's field lives) and also OptiFine's own ShadersTex (which calls the getter), and
+		// the second half cannot run until the first has recorded which class owns the field. The class cache is
+		// ordered by the jar it came from and the extras are appended after it, so iterating one combined map
+		// would put the game class first only by luck. Game classes here, taken-over classes after.
 		Map<String, byte[]> patched = new HashMap<>(classes.size() * 2);
 
 		for (Map.Entry<String, ClassNode> entry : classes.entrySet()) {
@@ -120,6 +127,20 @@ public class OptifineInjector {
 			} catch (Throwable t) {
 				failed++;
 				System.err.println("[OptiLithium] Failed to prepare the patched class " + entry.getKey() + ", it will not be replaced");
+				t.printStackTrace();
+			}
+		}
+
+		for (String extra : OptifineFixer.INSTANCE.getExtraClasses()) {
+			ClassNode node = classes.get(extra);
+
+			if (node == null) continue; // OptiFine patched it after all, so it went through the loop above
+
+			try {
+				patched.put(extra.replace('/', '.'), patch(extra, node));
+			} catch (Throwable t) {
+				failed++;
+				System.err.println("[OptiLithium] Failed to prepare the taken-over class " + extra + ", it will not be replaced");
 				t.printStackTrace();
 			}
 		}
@@ -133,6 +154,23 @@ public class OptifineInjector {
 		ClassNode game = readGameClass(name);
 		List<ClassFixer> fixers = OptifineFixer.INSTANCE.getFixers(name);
 		byte[] beforeFixers = null;
+
+		// Names this class was expected under, when the caller asks for it. A fixer that never fires is
+		// indistinguishable in the log from one that fired and chose to do nothing, and the difference decides
+		// where to look next - so the two facts (did the fixer list reach this class, did the game class
+		// resolve) are printed on demand rather than inferred.
+		//
+		// This is what found the silent registration mismatch behind the 1.21.6 crash: the fixer for GlTexture
+		// was registered under its Mojang path while the class being patched is named class_10868, so the list
+		// reaching the class was empty of it and nothing anywhere said so.
+		//   -Doptilithium.traceClasses=<comma-separated fragments of class names>
+		String trace = System.getProperty("optilithium.traceClasses");
+
+		if (trace != null && matchesAny(name, trace)) {
+			System.out.println("[OptiLithium] patching '" + name + "': fixers=" + fixers.size()
+					+ ", game class " + (game == null ? "NOT FOUND" : "found")
+					+ ", super=" + (source.superName == null ? "-" : source.superName));
+		}
 
 		//Remember the access the game class had, so the patched one stays at least as accessible
 		Object2IntMap<String> memberToAccess = new Object2IntArrayMap<>(source.methods.size() + source.fields.size());
@@ -218,6 +256,17 @@ public class OptifineInjector {
 		source.accept(writer);
 
 		return writer.toByteArray();
+	}
+
+	/** True when {@code name} contains any of the comma-separated fragments in {@code fragments}. */
+	private static boolean matchesAny(String name, String fragments) {
+		for (String fragment : fragments.split(",")) {
+			String trimmed = fragment.trim();
+
+			if (!trimmed.isEmpty() && name.contains(trimmed)) return true;
+		}
+
+		return false;
 	}
 
 	/** Recomputes stack map frames, resolving the game's class hierarchy whenever it can. */

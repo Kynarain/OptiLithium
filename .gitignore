@@ -61,3 +61,10 @@ config/
 # The in-world rig's game directories: worlds, shader packs and the OptiFine jar the user supplied.
 # Never source - and the shader packs are third-party downloads.
 test/world/
+
+# Per-sweep result files. tools/sweep-inworld.ps1 -OutFile writes one of these per batch, and the results that
+# matter are folded into tools/in-world-report.txt and tools/matrix-report.md, which ARE committed. Without
+# this, every sweep leaves a new file to notice and delete by hand, and a stray probe file from a half-run
+# measurement reads like a result.
+tools/sweep-*.txt
+tools/probe*.txt

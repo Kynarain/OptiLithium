@@ -1,4 +1,4 @@
-# Builds, launches and reads one OptiLithium version end to end, and appends a row to the matrix report.
+﻿# Builds, launches and reads one OptiLithium version end to end, and appends a row to the matrix report.
 #
 #   powershell -NoProfile -ExecutionPolicy Bypass -File tools\matrix.ps1 -Version 1.21.4
 #

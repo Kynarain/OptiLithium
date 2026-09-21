@@ -1,4 +1,4 @@
-# One-shot rebrand of the ported OptiFabric 1.21.x tree into OptiLithium.
+﻿# One-shot rebrand of the ported OptiFabric 1.21.x tree into OptiLithium.
 #
 # The rename is not cosmetic. Lithium declares "breaks": {"optifabric": "*"} in its fabric.mod.json, and
 # Fabric Loader's solver matches that by MOD ID, so a jar whose id is "optifabric" can never be loaded

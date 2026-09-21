@@ -318,8 +318,11 @@ public class OptifineSetup {
 	 * 27 (OptiLithium): RestoreSuperConstructorFix is registered for BlockEntity, so the patched classes come
 	 *     out different from what OptiFabric and OptiLithium <= 26 produced. The bump is not optional - a
 	 *     cache written by an earlier run is reused verbatim and the new fixer then never runs at all.
+	 * 28 (OptiLithium): InitMultiTexIdFix is registered for GlTexture. Same rule, and this one was measured:
+	 *     without the bump a 1.21.6 run reused the cache, printed "Prepared 487 patched classes" and crashed on
+	 *     the first dynamic texture exactly as before, which reads as "the fix does not work".
 	 */
-	private static final int CACHE_FORMAT = 27;
+	private static final int CACHE_FORMAT = 28;
 
 	/** Reads a class with its stack map frames expanded, so they survive the round trip (see the de-volderfy step). */
 	private static ClassNode readClassWithFrames(ZipFile zip, ZipEntry entry) throws IOException {
