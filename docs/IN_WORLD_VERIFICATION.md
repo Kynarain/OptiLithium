@@ -10,12 +10,16 @@ Two scripts, and the difference between them matters more than either result.
 
 **A title-screen pass is not a pass.** Everything this mod touches runs after a world loads, and the gap
 between the two checks was the whole story here: at the title screen every release from 1.20 to 1.21.10 looked
-identical to 1.21.11, and in a world all but two of them work.
+identical to 1.21.11, while in a world most of them worked and one of them had a defect the title screen could
+not see.
 
 ## Result
 
 Measured 2026-09-22 by `tools/in-world.ps1`, one release at a time, with the jars built from this revision.
 The full table with counts lives in `tools/in-world-report.txt`.
+
+**Every release that can be launched reaches a loaded world with the shader pack compiled**: 15 of 16, each with
+0 failed patched classes and 0 crash reports, and 54 shader programs built. The one that does not is 1.21.
 
 | MC | world + shaders | what happens |
 |---|---|---|
@@ -24,14 +28,14 @@ The full table with counts lives in `tools/in-world-report.txt`.
 | 1.20.2 | yes, 54 programs | clean; a few OptiFine GL warnings (see below) |
 | 1.20.4 | yes, 54 programs | clean |
 | 1.20.6 | yes, 54 programs | clean |
-| 1.21 | no | blocked by Lithium - `Mixin transformation of net.minecraft.class_2614 failed` |
+| 1.21 | no | blocked by Lithium - see below |
 | 1.21.1 | yes, 54 programs | clean |
 | 1.21.3 | yes, 54 programs | clean |
 | 1.21.4 | yes, 54 programs | clean |
 | 1.21.6 | yes, 54 programs | clean; `OpenGL error: 1282 ... at: alphaTestRef` (see below) |
 | 1.21.7 | yes, 54 programs | clean; same GL warnings |
 | 1.21.8 | yes, 54 programs | clean |
-| 1.21.9 | world yes, **shaders no** | `[Shaders] No shaderpack loaded.` - the one real gap |
+| 1.21.9 | yes, 54 programs | clean (was the last real gap - see below) |
 | 1.21.10 | yes, 54 programs | clean |
 | 1.21.11 | yes, 54 programs | clean |
 | 26.1.2 | no | quick play opens no world - also true of vanilla 26.1.2 with no mods |
@@ -105,40 +109,64 @@ recurses into the getter) and rewriting the helper to read the field (which dies
 because three of its four call sites are dispatched on a `DynamicTexture` and only the fourth holds a GL
 texture).
 
-## The two releases that do not reach a world
+## The 1.21.9 gap, and what it actually was
 
-**1.21 is blocked by Lithium.** Its only 1.21-family build targets `mc1.21.1`, and its mixin fails
-`net.minecraft.class_2614` — `HopperBlockEntity`, a class OptiFine does not patch at all (verified absent from
-`.optilithium/<version>/Optifine.classes.gz`). There is nothing on this side to repair. OptiLithium + OptiFine
-alone reach the title screen on 1.21.
+1.21.9 used to load a world but not the shader pack, reporting `[Shaders] No shaderpack loaded.` while 1.21.8 and
+1.21.10 loaded the same pack. Four explanations were tested and three of them were wrong:
 
-**26.1.2 never opens a world, and neither does the game without this mod.** With a valid
-`--quickPlaySingleplayer=<world>` pointing at an existing save, the client loads the shader pack, reaches the
-title screen and stays there: no integrated server, no `Preparing spawn area`, no crash report. A thread dump
-taken while it waits shows the render thread parked in
+- **not the pack**: selecting OptiFine's own built-in pack (`shaderPack=(debug)`) failed the same way;
+- **not the config file**: `tools/ShaderConfigProbe.java` reads `optionsshaders.txt` the way OptiFine does — seed
+  the default, `Properties.load()` over it, read back — and gets the name, correctly;
+- **not the pack directory or the zip**: unpacking the pack into a *folder* named like a zip, so OptiFine's
+  `isDirectory()` branch is taken instead of its zip branch, still failed;
+- **and the name was being read all along**: a probe injected into OptiFine's own `Shaders` reported
+  `currentShaderName = ComplementaryReimagined_r5.9.3.zip` at the end of `loadConfig`.
+
+The cause is in OptiFine's 1.21.9 bytecode. `loadShaderPack` computes the flag and then overwrites it:
+
+```
+192: putstatic shaderPackLoaded      # the honest value, from getShaderPack(name)
+195: iconst_0
+196: putstatic shaderPackLoaded      # and then, unconditionally, false
+199: getstatic shaderPackLoaded
+202: ifeq 219                        # always taken -> "No shaderpack loaded."
+```
+
+There is no path through the method that reaches 199 with the flag true, whoever selected the pack. 1.21.8 and
+1.21.10 do not have that second store. `ClearShaderPackLoadedFix` replaces it with a `pop` — one byte for one
+byte, so no offset moves, and the stack effect matches what the surrounding frames already describe — and 1.21.9
+now loads the pack and compiles the same 54 programs.
+
+The first attempt replaced the `iconst_0` with a `nop` instead, and the client then failed with
+`VerifyError: Operand stack underflow at @196` — because offset 195 is a branch target whose frame carries an
+`int` on the stack (`frame_type = 64 /* same_locals_1_stack_item */, stack = [ int ]`). Removing the push leaves
+the frame claiming a value that is not there; removing the *store* keeps the stack exactly as the frames describe
+it. That is why the substitution is a `pop` and not a `nop`.
+
+## The one release that does not reach a world: 1.21
+
+**1.21 is blocked by Lithium.** Its only 1.21-family build targets `mc1.21.1`, and on a 1.21 client its
+`HopperBlockEntityMixin` cannot find what it injects into:
+
+```
+Mixin apply for mod lithium failed lithium.mixins.json:block.hopper.HopperBlockEntityMixin
+Critical injection failure: @Inject annotation on invalidateOnSetCachedState could not find any targets
+matching 'method_31664(Lnet/minecraft/class_2680;)V' in net/minecraft/class_2614
+```
+
+`class_2614` is `HopperBlockEntity`, which **OptiFine does not patch at all** — verified absent from
+`.optilithium/<version>/Optifine.classes.gz` — so the class never passes through this mod's pipeline and there is
+nothing on this side to repair. It is a 1.21.1 jar applied to a 1.21 client, and the method it wants was removed
+between the two. OptiLithium + OptiFine alone reach the title screen on 1.21.
+
+## 26.1.2 opens no world under any configuration
+
+With a valid `--quickPlaySingleplayer=<world>` pointing at an existing save, the client loads the shader pack,
+reaches the title screen and stays there: no integrated server, no `Preparing spawn area`, no crash report. A
+thread dump taken while it waits shows the render thread parked in
 `Minecraft.renderFrame` -> `FramerateLimiter.limitDisplayFPS` — the ordinary game loop with nothing loaded. The
 same command line on **vanilla Fabric 26.1.2 with no mods** behaves identically, and this mod's own contribution
 to that run is `Prepared 567 patched classes (0 skipped, 0 failed)`, Lithium loaded, and no error of any kind.
-
-## The one real gap: 1.21.9's shader pack
-
-The world loads and the game runs with no crash and no error, but OptiFine reports
-`[Shaders] No shaderpack loaded.` and compiles no programs, even though the pack is present in
-`shaderpacks/`, selected in `optionsshaders.txt`, and visible to the module system. The 1.21.8 and 1.21.10
-releases — on either side of it, and running the same OptiFine shader code — both load it. Recorded as a gap.
-
-What has been ruled out, so a next attempt does not redo it:
-
-- **not the pack**: selecting OptiFine's own built-in pack (`shaderPack=internal`) reports the same
-  `No shaderpack loaded.`, so nothing about the Complementary archive is involved;
-- **not the config file**: `tools/ShaderConfigProbe.java` reads `optionsshaders.txt` the way OptiFine does — seed
-  the default, `Properties.load()` over it, read back — and gets the pack name correctly, at the right length;
-- **not the patcher**: the same jar, the same OptiFine build and the same config load the pack on 1.21.8 and
-  1.21.10, and the `multiTex` fixer reports the expected `class_10868`-based `MultiTexID` constructor on all
-  three;
-- **where it fails**: in OptiFine's bytecode the result is `shaderPackLoaded = false` followed by
-  `shaderPack = new ShaderPackNone()` — that is, `getShaderPack(name)` returned null *after* `loadConfig` had set
-  the name. So the pack's resolution is the suspect, not its contents.
 
 
 ## GL warnings that are not failures

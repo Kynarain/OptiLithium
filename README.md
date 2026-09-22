@@ -105,19 +105,19 @@ OptiFine publishes a build for most of these releases; where it publishes none, 
 unsupported rather than silently omitted. Both jars must match the release exactly — `OptifineVersion` reads
 `MC_VERSION` out of `optifine/Config` and refuses to start on a mismatch.
 
-> **Actual state: 14 of the 16 supported releases reach a loaded world with a shader pack compiled.** The two
-> exceptions are not defects this mod can fix. **1.21** is blocked by Lithium itself: its only 1.21-family build
-> targets `mc1.21.1`, and it fails `Mixin transformation of net.minecraft.class_2614` on `HopperBlockEntity`, a
-> class OptiFine does not patch. **26.1.2** never opens a world — and neither does the game without us: vanilla
-> Fabric 26.1.2 with no mods at all ignores `--quickPlaySingleplayer` and stays on the title screen, while this
-> mod reaches that title screen with the shader pack loaded and no crash. **1.21.9** is the one real gap: it
-> loads a world and runs, but OptiFine reports `No shaderpack loaded.` there while 1.21.8 and 1.21.10 both load
-> the same pack.
+> **Actual state: every release that can be launched reaches a loaded world with a shader pack compiled — 15 of
+> 16, each with 0 failed patched classes, 0 crash reports and 54 shader programs.** The one exception is not a
+> defect this mod can fix. **1.21** is blocked by Lithium itself: its only 1.21-family build targets `mc1.21.1`,
+> and on a 1.21 client its `HopperBlockEntityMixin` looks for a method that 1.21 does not have — in
+> `HopperBlockEntity`, a class OptiFine does not patch at all, so it never reaches this mod's pipeline.
+> **26.1.2** never opens a world — and neither does the game without us: vanilla Fabric 26.1.2 with no mods at
+> all ignores `--quickPlaySingleplayer` and stays on the title screen, while this mod reaches that title screen
+> with the shader pack loaded and no crash.
 >
 > Every number is measured by `tools/in-world.ps1`, which deletes the game directory and verifies the delete
 > before launching, then reads only the files that run wrote — an earlier round of marks was wrong because the
 > reader could find markers in **stale logs** (`-Fresh` cannot delete a directory a running JVM holds open, so a
-> crashed run reused the previous run's log). Full table, method and the two known limitations:
+> crashed run reused the previous run's log). Full table, method and both limitations:
 > [`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md).
 
 | Minecraft | Java | OptiFine build | Lithium build | State |
@@ -138,7 +138,7 @@ unsupported rather than silently omitted. Both jars must match the release exact
 | 1.21.6 | 21 | `preview_OptiFine_1.21.6_HD_U_J6_pre3` | `lithium-fabric-0.17.0+mc1.21.6` | **loads a world, shaders** |
 | 1.21.7 | 21 | `preview_OptiFine_1.21.7_HD_U_J6_pre7` | `lithium-fabric-0.18.0+mc1.21.7` | **loads a world, shaders** |
 | 1.21.8 | 21 | `preview_OptiFine_1.21.8_HD_U_J6_pre16` | `lithium-fabric-0.18.1+mc1.21.8` | **loads a world, shaders** |
-| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | loads a world; shader pack does not load |
+| 1.21.9 | 21 | `preview_OptiFine_1.21.9_HD_U_J7_pre2` | `lithium-fabric-0.19.2+mc1.21.9` | **loads a world, shaders** |
 | 1.21.10 | 21 | `preview_OptiFine_1.21.10_HD_U_J7_pre11` | `lithium-fabric-0.20.1+mc1.21.10` | **loads a world, shaders** |
 | 1.21.11 | 21 | `OptiFine_1.21.11_HD_U_J9` | `lithium-fabric-0.21.4+mc1.21.11` | **loads a world, shaders** |
 | 26.1 | 25 | — | `lithium-fabric-0.24.7+mc26.1.2` | OptiFine ships no build |
@@ -153,18 +153,19 @@ That matrix stops at the title screen, which is not the same as the mod working 
 ticking and shader compilation all happen **after** a world loads. The deeper run is recorded in
 [`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md) and in `tools/in-world-report.txt`: each release
 is launched into a real world through `--quickPlaySingleplayer` (`Starting integrated minecraft server`,
-`Preparing spawn area`) with a shader pack, and **14 of 16 reach that world with 54 shader programs compiled and
+`Preparing spawn area`) with a shader pack, and **15 of 16 reach that world with 54 shader programs compiled and
 no crash.**
 
-### The two releases that are not green
+### The one release that is not green
 
 **1.21 is broken by Lithium, not by OptiLithium.** OptiFine ships `1.21` as HD_U_J1 pre9, and Lithium's newest
 build for the 1.21 family is `lithium-fabric-0.15.2+mc1.21.1` — a jar built for **1.21.1**. Its mixins are
 applied to the 1.21 client and one of them fails the class it targets:
 
 ```
-Mixin transformation of net.minecraft.class_2614 failed
-Caused by: NoClassDefFoundError: Could not initialize class net.minecraft.class_2246
+Mixin apply for mod lithium failed lithium.mixins.json:block.hopper.HopperBlockEntityMixin
+Critical injection failure: @Inject annotation on invalidateOnSetCachedState could not find any targets
+matching 'method_31664(Lnet/minecraft/class_2680;)V' in net/minecraft/class_2614
 ```
 
 `class_2614` on 1.21 is `HopperBlockEntity`, which **OptiFine does not patch at all** — verified by looking
@@ -182,11 +183,13 @@ mods at all** behaves identically, so this is not something OptiLithium introduc
 repair; the mod's own contribution to that run is `Prepared 567 patched classes (0 skipped, 0 failed)`,
 Lithium loaded, and no error of any kind.
 
-**1.21.9 is the one real gap.** The world loads and the game runs with no crash and no error, but OptiFine
-reports `[Shaders] No shaderpack loaded.` and compiles no programs, even though the pack is present in
-`shaderpacks/`, selected in `optionsshaders.txt`, and visible to the module system. 1.21.8 and 1.21.10 — the
-releases on either side of it, using the same OptiFine shader code — both load it. Recorded as a gap rather
-than a pass.
+**1.21.9 needed a fix and has one.** It used to load a world but not the shader pack — OptiFine reported
+`[Shaders] No shaderpack loaded.` while 1.21.8 and 1.21.10 loaded the same pack. The cause is in OptiFine's own
+1.21.9 bytecode: `loadShaderPack` computes `shaderPackLoaded` from the selected pack and then overwrites it with
+a constant, so no path can leave it true. `ClearShaderPackLoadedFix` replaces that second store with a `pop`,
+which is one byte for one byte and leaves the stack as the surrounding frames describe it. 1.21.9 now loads the
+pack and compiles the same 54 programs. See
+[`docs/IN_WORLD_VERIFICATION.md`](docs/IN_WORLD_VERIFICATION.md).
 
 ## Building from source
 

@@ -241,6 +241,13 @@ public class OptifineFixer {
 		//net/minecraft/client/texture/SpriteAtlasTexture
 		registerFix("class_1059", new SpriteAtlasTextureFix());
 
+		//OptiFine's own shader class. It is NOT in the class cache - that holds only what OptiFine patches into
+		//the game, and this is OptiFine's own code - so it is taken over explicitly. It is where 1.21.9 sets
+		//shaderPackLoaded to false immediately after computing it, which makes a selected shader pack impossible
+		//to load on that release; 1.21.8 and 1.21.10 do not have that store, and the fixer removes it only
+		//where it is there. See ClearShaderPackLoadedFix.
+		registerExtraClass("net/optifine/shaders/Shaders", new ClearShaderPackLoadedFix("1.21.9"));
+
 		//com/mojang/blaze3d/opengl/GlTexture - the class, not an id: this is where OptiFine puts its MultiTexID
 		//field (verified: of the five patched classes that mention that type, only class_10868 and
 		//com/mojang/blaze3d/textures/GpuTexture declare a member, and only class_10868 has the field).
@@ -479,6 +486,17 @@ public class OptifineFixer {
 	/** True when this class is registered as one OptiFine does not patch, so the caller can avoid patching it twice. */
 	public boolean hasExtraClass(String className) {
 		return extraClasses.contains(className);
+	}
+
+	/**
+	 * True when this fixer runs on every class rather than on one in particular.
+	 *
+	 * <p>The caller uses it to leave global fixers out of the "can this class keep its frames" decision: they are
+	 * registered for every class, so counting them would make that decision always false and silently disable
+	 * the frame-preserving path for exactly the classes that need it.</p>
+	 */
+	public boolean isGlobalFix(ClassFixer fixer) {
+		return globalFixes.contains(fixer);
 	}
 
 	private void registerGlobalFix(ClassFixer classFixer) {

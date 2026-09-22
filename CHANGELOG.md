@@ -32,6 +32,20 @@ reference for how OptiFine's recompiler is repaired in general.
   skips an extra that already went through.
 - **The id allocation used the texture's own GL id, which is 0 during construction**, producing
   `[Shaders] Error : MultiTexID.base mismatch: 0, texid: N`. It uses `GL11.glGenTextures()` for all three ids.
+- **1.21.9 loaded a world but never loaded a shader pack.** OptiFine's own 1.21.9 bytecode computes
+  `shaderPackLoaded` from the selected pack and then overwrites it with a constant, so no path through
+  `Shaders.loadShaderPack` can leave it true and every run reports `[Shaders] No shaderpack loaded.` - whoever
+  selected the pack, including OptiFine's built-in one. 1.21.8 and 1.21.10 do not have that second store. The
+  new `ClearShaderPackLoadedFix` replaces it with a `pop`, one byte for one byte, so no offset in the method
+  moves and the stack stays as the surrounding frames describe it. Removing the `iconst_0` instead fails with
+  `VerifyError: Operand stack underflow`, because the branch target's frame carries an `int` on the stack.
+  Finding this also needed a probe injected into OptiFine's own class, because all four obvious explanations -
+  the pack, the config file, the pack directory and the name resolution - were correct.
+- **A correct fixer could be defeated by the class it ran on.** Frames were recomputed for every class a fixer
+  touched, and ASM's analysis of one method it cannot follow throws `NegativeArraySizeException: -1`, which
+  fails the whole patched class and leaves the fixer looking like it never ran. `ClassFixer.keepsFrames` lets a
+  fixer that only makes same-size, stack-neutral substitutions keep OptiFine's frames, and the decision is
+  verified with `CheckClassAdapter.verify` before the bytes are handed to Fabric Loader.
 
 ### Added
 

@@ -240,27 +240,74 @@ public class OptifineInjector {
 		//descriptors though (KeyboardFix turns Screen parameters into Element ones), which invalidates the
 		//shipped frames - the verifier then rejects the class with "Inconsistent stackmap frames". Those few
 		//classes get their frames recomputed instead.
+		//
+		// So honour a class's fixers when they declare that they cannot invalidate a frame - see
+		// ClassFixer#keepsFrames. The global fixers are exempt from that declaration ON PURPOSE: one of them is
+		// registered for every class, so including them would make the check always false and quietly put
+		// everything back on the recomputing path - which is exactly what happened the first time this was
+		// written, and it is why a class whose fixers only substitute an instruction still failed to be
+		// prepared.
+		boolean framesKept = true;
+
+		for (ClassFixer fixer : fixers) {
+			if (!OptifineFixer.INSTANCE.isGlobalFix(fixer) && !fixer.keepsFrames()) {
+				framesKept = false;
+				break;
+			}
+		}
+
+		// The decision is VERIFIED before it is used: the frame-preserving bytes are read back, so a class that
+		// would not load is not handed to Fabric Loader. A fixer that changes a descriptor while claiming to
+		// keep frames is a bug, and this catches it here rather than as an "Inconsistent stackmap frames"
+		// VerifyError in the middle of a world load.
+		if (framesKept) {
+			ClassWriter plain = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+			source.accept(plain);
+
+			byte[] kept = plain.toByteArray();
+
+			dump(name, kept);
+
+			try {
+				// CheckClassAdapter, not a bare read: a plain ClassNode.accept accepts bytecode the verifier
+				// will reject, so it cannot answer "is this form loadable" - which is the whole question here.
+				org.objectweb.asm.util.CheckClassAdapter.verify(new ClassReader(kept), false, new java.io.PrintWriter(System.err));
+
+				return kept;
+			} catch (Throwable t) {
+				System.err.println("[OptiLithium] " + name + ": the frames-preserved form of this class cannot be read ("
+						+ t + "), so its frames are recomputed instead");
+			}
+		}
+
 		ClassWriter writer = beforeFixers == null ? new ClassWriter(0) : new FrameComputingWriter();
 		source.accept(writer);
 
 		byte[] out = writer.toByteArray();
 
-		// -Doptilithium.dumpFixed=<dir> writes the FINAL bytecode of every class a fixer changed. The class
-		// cache in .optilithium/ holds the state BEFORE the fixers, so without this there is no way to see
-		// what a fixer actually produced - which is what a VerifyError has to be diagnosed against.
-		String dumpDir = System.getProperty("optilithium.dumpFixed");
-
-		if (dumpDir != null && beforeFixers != null) {
-			try {
-				java.io.File target = new java.io.File(dumpDir, name + ".class");
-				target.getParentFile().mkdirs();
-				java.nio.file.Files.write(target.toPath(), out);
-			} catch (Throwable t) {
-				System.err.println("[OptiLithium] Could not dump the fixed " + name + ": " + t);
-			}
-		}
+		dump(name, out);
 
 		return out;
+	}
+
+	/**
+	 * Writes the FINAL bytecode of a class a fixer changed when -Doptilithium.dumpFixed=&lt;dir&gt; is set.
+	 *
+	 * <p>The class cache in .optilithium/ holds the state BEFORE the fixers, so without this there is no way to
+	 * see what a fixer actually produced - which is what a VerifyError has to be diagnosed against.</p>
+	 */
+	private static void dump(String name, byte[] bytes) {
+		String dumpDir = System.getProperty("optilithium.dumpFixed");
+
+		if (dumpDir == null) return;
+
+		try {
+			java.io.File target = new java.io.File(dumpDir, name + ".class");
+			target.getParentFile().mkdirs();
+			java.nio.file.Files.write(target.toPath(), bytes);
+		} catch (Throwable t) {
+			System.err.println("[OptiLithium] Could not dump the fixed " + name + ": " + t);
+		}
 	}
 
 	/** The class as it currently stands, with its frames left exactly as they were read. */

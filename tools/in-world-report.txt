@@ -13,28 +13,40 @@ then read only the files that run wrote. "prepared / failed" is the pipeline's o
 
 | MC | verdict | prepared / failed | in world | shader pack | programs | Lithium | crashes | thread errors |
 |---|---|---|---|---|---|---|---|---|
-| 1.20 | IN WORLD | 410 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.20.1 | IN WORLD | 412 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.20.2 | IN WORLD | 423 / 0 | yes | yes | 54 | yes | 0 | 4 (see below) |
-| 1.20.4 | IN WORLD | 427 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.20.6 | IN WORLD | 426 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21 | FAILED | 440 / 0 | no | - | - | yes | 0 | 0 |
-| 1.21.1 | IN WORLD | 425 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21.3 | IN WORLD | 440 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21.4 | IN WORLD | 474 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21.6 | IN WORLD | 487 / 0 | yes | yes | 54 | yes | 0 | 8 (GL warnings) |
-| 1.21.7 | IN WORLD | 500 / 0 | yes | yes | 54 | yes | 0 | 16 (GL warnings) |
-| 1.21.8 | IN WORLD | 516 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21.9 | IN WORLD | 519 / 0 | yes | **no** | 0 | yes | 0 | 0 |
-| 1.21.10 | IN WORLD | 553 / 0 | yes | yes | 54 | yes | 0 | 0 |
-| 1.21.11 | IN WORLD | 570 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20 | IN WORLD | 411 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.1 | IN WORLD | 413 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.2 | IN WORLD | 424 / 0 | yes | yes | 54 | yes | 0 | 4 (see below) |
+| 1.20.4 | IN WORLD | 428 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.20.6 | IN WORLD | 427 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21 | FAILED | 441 / 0 | no | - | - | yes | 0 | 0 |
+| 1.21.1 | IN WORLD | 426 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.3 | IN WORLD | 441 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.4 | IN WORLD | 475 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.6 | IN WORLD | 488 / 0 | yes | yes | 54 | yes | 0 | 8 (GL warnings) |
+| 1.21.7 | IN WORLD | 501 / 0 | yes | yes | 54 | yes | 0 | 16 (GL warnings) |
+| 1.21.8 | IN WORLD | 517 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.9 | IN WORLD | 520 / 0 | yes | **yes** | 54 | yes | 0 | 0 |
+| 1.21.10 | IN WORLD | 554 / 0 | yes | yes | 54 | yes | 0 | 0 |
+| 1.21.11 | IN WORLD | 571 / 0 | yes | yes | 54 | yes | 0 | 0 |
 | 26.1.2 | NO LAUNCH | 567 / 0 | no | yes | 0 | yes | 0 | 0 |
 
-Fourteen of sixteen reach a loaded world. Two do not, and neither is a defect this mod can fix:
+Every release that can be launched reaches a loaded world with the shader pack compiled: 15 of 16, each with 0
+failed patched classes and 0 crash reports. The one that does not is 1.21, and it is blocked by Lithium:
 
-* **1.21** is blocked by Lithium, not by us. Lithium's only 1.21-family build is `mc1.21.1`, and it fails
-  `Mixin transformation of net.minecraft.class_2614` - `HopperBlockEntity`, a class OptiFine does not patch, so
-  there is nothing here to repair. OptiLithium + OptiFine alone reach the title screen on 1.21.
+* **1.21** is blocked by Lithium, not by us. Lithium's only 1.21-family build is `mc1.21.1`, and on a 1.21 client
+  its `HopperBlockEntityMixin` cannot find what it injects into:
+
+  ```
+  Mixin apply for mod lithium failed lithium.mixins.json:block.hopper.HopperBlockEntityMixin
+  Critical injection failure: @Inject annotation on invalidateOnSetCachedState could not find any targets
+  matching 'method_31664(Lnet/minecraft/class_2680;)V' in net/minecraft/class_2614
+  ```
+
+  `class_2614` is `HopperBlockEntity`, which **OptiFine does not patch at all** - verified by searching
+  `.optilithium/<version>/Optifine.classes.gz`, where it is absent - so this class never passes through this
+  mod's pipeline and there is nothing here to repair. It is a 1.21.1 jar being applied to a 1.21 client, and the
+  method it wants was removed between the two. OptiLithium + OptiFine alone reach the title screen on 1.21.
+
 * **26.1.2** never opens a world, and neither does the game without us: **vanilla Fabric 26.1.2 with no mods at
   all ignores `--quickPlaySingleplayer` and sits at the title screen**. The mod reaches the title screen with the
   shader pack loaded (567 patched classes, 0 failed) and no crash. A thread dump taken while it waits shows the
@@ -50,30 +62,32 @@ Two releases report GL-level errors that are OptiFine's shader code talking to t
 `[Shaders] OpenGL error: 1282 (Invalid operation), program: gbuffers_*, at: alphaTestRef` on 1.21.6 and 1.21.7,
 and the same family on 1.20.2. The world loads, all 54 programs compile, and nothing is dropped.
 
-The one real gap is **1.21.9**: the world loads and the game runs, but OptiFine reports
-`[Shaders] No shaderpack loaded.` even though the pack is present, selected in `optionsshaders.txt` and visible
-to the module system - 1.21.8 and 1.21.10, which bookend it, both load it. It is recorded as a gap rather than a
-pass.
+1.21.9 used to be a gap, and the cause is worth recording because every plausible explanation was wrong:
 
-What has been established about it, so the next attempt does not repeat the work:
+* it was not the pack, the config file or the pack directory. Selecting OptiFine's own built-in pack
+  (`shaderPack=(debug)`) failed the same way; `tools/ShaderConfigProbe.java` reads `optionsshaders.txt` the way
+  OptiFine does and gets the name correctly; and a run with the pack unpacked into a *folder* - so that
+  OptiFine's `isDirectory()` branch was taken instead of its zip branch - still failed;
+* a probe injected into OptiFine's own `Shaders` showed `currentShaderName` ending `loadConfig` as
+  `ComplementaryReimagined_r5.9.3.zip`, i.e. the name WAS read;
+* the cause is in OptiFine's 1.21.9 bytecode: `loadShaderPack` computes the flag and then overwrites it with a
+  constant, so no path can leave it true:
 
-* it is not the pack. Selecting OptiFine's own built-in pack (`shaderPack=internal`) reports the same
-  `No shaderpack loaded.`, so nothing about the Complementary archive is involved;
-* it is not the config file. `tools/ShaderConfigProbe.java` reads `test/world/w1.21.9/optionsshaders.txt` the way
-  OptiFine does - seed the default, `load()` over it, read back - and gets
-  `shaderPack = [ComplementaryReimagined_r5.9.3.zip]`, correctly;
-* it is not the pactcher. The same jar, same OptiFine build and same config load the pack on 1.21.8 and 1.21.10,
-  and this mod's own fixer reports the expected `MultiTexID(Lnet/minecraft/class_10868;...)` constructor on all
-  three;
-* in OptiFine's bytecode the failure is `shaderPackLoaded = false` with `shaderPack = new ShaderPackNone()` -
-  i.e. `getShaderPack(name)` returned null after `loadConfig` had set the name, which points at the pack's
-  resolution rather than at its contents.
+  ```
+  192: putstatic shaderPackLoaded        # the honest value, computed from getShaderPack(name)
+  195: iconst_0
+  196: putstatic shaderPackLoaded        # and then, unconditionally, false
+  199: getstatic shaderPackLoaded
+  202: ifeq 219                          # always taken -> "No shaderpack loaded."
+  ```
 
+  1.21.8 and 1.21.10 do not have that second store. `ClearShaderPackLoadedFix` replaces it with a `pop` - a
+  same-size, stack-neutral substitution - and 1.21.9 now loads the pack and compiles the same 54 programs.
 
 How the shared defects behind these numbers were found
 ------------------------------------------------------
 
-The pipeline's own report line is not enough to trust, and three defects hid behind a healthy-looking
+The pipeline's own report line is not enough to trust, and four defects hid behind a healthy-looking
 `Prepared N patched classes (0 skipped, 0 failed)`:
 
 * a `NoSuchMethodError` on `BlockEntity.getCapabilities` appeared ~200 times per world load and dropped each
@@ -83,7 +97,11 @@ The pipeline's own report line is not enough to trust, and three defects hid beh
   allocating the id on first use and initialising the field in every constructor);
 * the fixer for that field was registered under a name that never matched, so it did not run at all while the
   pipeline reported success - and, once it did run, a `getNext()` walk inside it hung the client at 100% of one
-  core for eight minutes with no crash, no error and `prepared=-`.
+  core for eight minutes with no crash, no error and `prepared=-`;
+* OptiFine's 1.21.9 shader class was dropped by the pipeline instead of being patched, because recomputing the
+  frames of a class whose frames were already valid failed on an unrelated method of it - an all-or-nothing
+  failure that made a correct fixer look like a fixer that had not run.
+
 
 Each of those is documented at its source: `docs/BLOCKENTITY_CONFLICT.md` and the class comment on
 `InitMultiTexIdFix`.

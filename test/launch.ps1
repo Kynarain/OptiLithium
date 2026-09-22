@@ -50,8 +50,14 @@ $Mods = @($Mods | ForEach-Object { $_ -split ';' } | Where-Object { $_ })
 # -Doptilithium.traceClasses=10868" and traceClasses=null. No error, no property, no output - measured with a
 # probe class, then again here, where this line is the one that finally made the trace flags arrive.
 $ExtraJvm = @($ExtraJvm | ForEach-Object { $_ -split '[, ]+' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
-if ($ExtraJvm.Count -gt 1 -and (Get-Command Write-Host -ErrorAction SilentlyContinue)) {
+if ($ExtraJvm.Count -gt 1) {
 	Write-Host "  extraJvm : $($ExtraJvm.Count) properties: $($ExtraJvm -join ' | ')"
+}
+# NO clean exit: the client is killed, and killing it is what makes the write-back observable. Everything this
+# run reaches is already recorded in the game directory, and the alternative (waiting for a graceful shutdown)
+# needs a window nobody is watching.
+if (Get-Command Write-Host -ErrorAction SilentlyContinue) {
+	Write-Host "  game dir : $GameDir"
 }
 
 $versionsDir = Join-Path $McRoot 'versions'
