@@ -44,8 +44,19 @@ failed patched classes and 0 crash reports. The one that does not is 1.21, and i
 
   `class_2614` is `HopperBlockEntity`, which **OptiFine does not patch at all** - verified by searching
   `.optilithium/<version>/Optifine.classes.gz`, where it is absent - so this class never passes through this
-  mod's pipeline and there is nothing here to repair. It is a 1.21.1 jar being applied to a 1.21 client, and the
-  method it wants was removed between the two. OptiLithium + OptiFine alone reach the title screen on 1.21.
+  mod's pipeline on its own.
+
+  The reason the target is missing is exact, and was read out of the 1.21 intermediary mappings: in 1.21
+  `method_31664` is declared on `class_2586` (`BlockEntity`), while in 1.21.1 - the release Lithium's jar is
+  built for - it was still declared on the subclass. Mixin resolves `@Inject` against the class it is applied
+  to and does not search supertypes, so the target genuinely does not exist there.
+
+  That was measured rather than assumed: taking the class over and re-declaring `method_31664` on `class_2614`
+  as a bridge to its supertype **does** clear this failure - the mixin applies and the client moves on - and
+  then fails on the next 1.21.1 assumption instead, with `NoClassDefFoundError: Could not initialize class
+  net.minecraft.class_1802` and no further detail. Making 1.21 work would mean repairing an unknown number of
+  those one at a time against a jar built for a different release, so the bridge was removed rather than shipped
+  unverified. `1.21.1` is the same game family with a Lithium build that targets it, and it passes everything.
 
 * **26.1.2** never opens a world, and neither does the game without us: **vanilla Fabric 26.1.2 with no mods at
   all ignores `--quickPlaySingleplayer` and sits at the title screen**. The mod reaches the title screen with the
