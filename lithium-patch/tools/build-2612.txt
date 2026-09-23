@@ -1,0 +1,6 @@
+﻿### sweep of 1 release(s)
+### 26.1.2 : lithium=26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar optifabric=OptiFabric-Reforged-2.0.0+mc26.1.2.jar
+[patch-lithium] 26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc26.1.2-patched.jar
+[patch-lithium] removed breaks: optifabric
+26.1.2 : BUILT
+### sweep done

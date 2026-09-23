@@ -1,0 +1,42 @@
+﻿### sweep of 16 release(s)
+### 1.20 : lithium=1.20__lithium-fabric-mc1.20-0.11.2.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] configuration for 1.20 -> I:\mods\lithium-patch\out\lithium-1.20.properties
+[patch-lithium] 1.20__lithium-fabric-mc1.20-0.11.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.20-Fabric-0.19.5 : FAILED  prepared=-  inWorld=no  shaderpack=no  programs=0  lithium=no  crashes=0  threadErrors=0  disabledMixins=0  conflict=YES  -
+### 1.20.1 : lithium=1.20.1__lithium-fabric-mc1.20.1-0.11.4.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.1 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] configuration for 1.20.1 -> I:\mods\lithium-patch\out\lithium-1.20.1.properties
+[patch-lithium] 1.20.1__lithium-fabric-mc1.20.1-0.11.4.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.1-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.20.1-Fabric-0.19.5 : FAILED  prepared=-  inWorld=no  shaderpack=no  programs=0  lithium=no  crashes=0  threadErrors=0  disabledMixins=0  conflict=YES  -
+### 1.20.2 : lithium=1.20.2__lithium-fabric-mc1.20.2-0.12.0.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.2 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] configuration for 1.20.2 -> I:\mods\lithium-patch\out\lithium-1.20.2.properties
+[patch-lithium] 1.20.2__lithium-fabric-mc1.20.2-0.12.0.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.2-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.20.2-Fabric-0.19.5 : FAILED  prepared=-  inWorld=no  shaderpack=no  programs=0  lithium=no  crashes=0  threadErrors=0  disabledMixins=0  conflict=YES  -
+### 1.20.4 : lithium=1.20.4__lithium-fabric-mc1.20.4-0.12.1.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.4 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] configuration for 1.20.4 -> I:\mods\lithium-patch\out\lithium-1.20.4.properties
+[patch-lithium] 1.20.4__lithium-fabric-mc1.20.4-0.12.1.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.4-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.20.4-Fabric-0.19.5 : FAILED  prepared=-  inWorld=no  shaderpack=no  programs=0  lithium=no  crashes=0  threadErrors=0  disabledMixins=0  conflict=YES  -
+### 1.20.6 : lithium=1.20.6__lithium-fabric-mc1.20.6-0.12.5.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.6 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] configuration for 1.20.6 -> I:\mods\lithium-patch\out\lithium-1.20.6.properties
+[patch-lithium] 1.20.6__lithium-fabric-mc1.20.6-0.12.5.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.6-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.20.6-Fabric-0.19.5 : FAILED  prepared=-  inWorld=no  shaderpack=no  programs=0  lithium=no  crashes=0  threadErrors=0  disabledMixins=0  conflict=YES  -
+### 1.21 : lithium=1.21__lithium-fabric-mc1.21-0.13.1.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : m | m
+[patch-lithium] configuration for 1.21 -> I:\mods\lithium-patch\out\lithium-1.21.properties
+[patch-lithium] 1.21__lithium-fabric-mc1.21-0.13.1.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] lithium.properties lines: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false

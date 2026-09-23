@@ -1,0 +1,50 @@
+﻿### sweep of 6 release(s)
+### 1.21.4 : lithium=1.21.4__lithium-fabric-0.15.3+mc1.21.4.jar optifabric=OptiFabric-1.1.2+mc1.21.4.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 1.21.4 -> I:\mods\lithium-patch\out\lithium-1.21.4.properties
+[patch-lithium] 1.21.4__lithium-fabric-0.15.3+mc1.21.4.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.4-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.21.4-Fabric-0.19.5 : IN WORLD  prepared=474 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=0  disabledMixins=0  conflict=no  -
+### 1.21.6 : lithium=1.21.6__lithium-fabric-0.17.0+mc1.21.6.jar optifabric=OptiFabric-1.1.2+mc1.21.6.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 1.21.6 -> I:\mods\lithium-patch\out\lithium-1.21.6.properties
+[patch-lithium] 1.21.6__lithium-fabric-0.17.0+mc1.21.6.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.6-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+  mod      : OptiFabric-1.1.2+mc1.21.6.jar
+  mod      : preview_OptiFine_1.21.6_HD_U_J6_pre3.jar
+1.21.6-Fabric-0.19.5 : NO WORLD  prepared=487 / 0 failed  inWorld=no  shaderpack=yes  programs=0  lithium=yes  crashes=1  threadErrors=0  disabledMixins=0  conflict=no  -
+### 1.21.7 : lithium=1.21.7__lithium-fabric-0.18.0+mc1.21.7.jar optifabric=OptiFabric-1.1.2+mc1.21.7.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 1.21.7 -> I:\mods\lithium-patch\out\lithium-1.21.7.properties
+[patch-lithium] 1.21.7__lithium-fabric-0.18.0+mc1.21.7.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.7-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+  mod      : OptiFabric-1.1.2+mc1.21.7.jar
+  mod      : preview_OptiFine_1.21.7_HD_U_J6_pre7.jar
+1.21.7-Fabric-0.19.5 : NO WORLD  prepared=500 / 0 failed  inWorld=no  shaderpack=yes  programs=0  lithium=yes  crashes=1  threadErrors=0  disabledMixins=0  conflict=no  -
+### 1.21.8 : lithium=1.21.8__lithium-fabric-0.18.1+mc1.21.8.jar optifabric=OptiFabric-1.1.2+mc1.21.8.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 1.21.8 -> I:\mods\lithium-patch\out\lithium-1.21.8.properties
+[patch-lithium] 1.21.8__lithium-fabric-0.18.1+mc1.21.8.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.8-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.21.8-Fabric-0.19.5 : IN WORLD  prepared=516 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=0  disabledMixins=0  conflict=no  -
+### 1.21.10 : lithium=1.21.10__lithium-fabric-0.20.1+mc1.21.10.jar optifabric=OptiFabric-1.1.2+mc1.21.10.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 1.21.10 -> I:\mods\lithium-patch\out\lithium-1.21.10.properties
+[patch-lithium] 1.21.10__lithium-fabric-0.20.1+mc1.21.10.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.10-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+1.21.10-Fabric-0.19.5 : IN WORLD  prepared=553 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=0  disabledMixins=0  conflict=no  -
+### 26.1.2 : lithium=26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar optifabric=OptiFabric-Reforged-2.0.0+mc26.1.2.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 26.1.2 -> I:\mods\lithium-patch\out\lithium-26.1.2.properties
+[patch-lithium] 26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc26.1.2-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+  mod      : OptiFabric-Reforged-2.0.0+mc26.1.2.jar
+  mod      : preview_OptiFine_26.1.2_HD_U_K1_pre2.jar
+26.1.2-Fabric-0.19.5 : NO WORLD  prepared=567 / 0 failed  inWorld=no  shaderpack=yes  programs=0  lithium=yes  crashes=0  threadErrors=0  disabledMixins=0  conflict=no  -
+### sweep done

@@ -1,0 +1,74 @@
+﻿### sweep of 16 release(s)
+### 1.20 : lithium=1.20__lithium-fabric-mc1.20-0.11.2.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.20__lithium-fabric-mc1.20-0.11.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.20 : BUILT
+### 1.20.1 : lithium=1.20.1__lithium-fabric-mc1.20.1-0.11.4.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.1 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.20.1__lithium-fabric-mc1.20.1-0.11.4.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.1-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.20.1 : BUILT
+### 1.20.2 : lithium=1.20.2__lithium-fabric-mc1.20.2-0.12.0.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.2 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.20.2__lithium-fabric-mc1.20.2-0.12.0.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.2-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.20.2 : BUILT
+### 1.20.4 : lithium=1.20.4__lithium-fabric-mc1.20.4-0.12.1.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.4 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.20.4__lithium-fabric-mc1.20.4-0.12.1.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.4-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.20.4 : BUILT
+### 1.20.6 : lithium=1.20.6__lithium-fabric-mc1.20.6-0.12.5.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.20.6 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.20.6__lithium-fabric-mc1.20.6-0.12.5.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.20.6-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.20.6 : BUILT
+### 1.21 : lithium=1.21__lithium-fabric-mc1.21-0.13.1.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+[patch-lithium] 1.21__lithium-fabric-mc1.21-0.13.1.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21 : BUILT
+### 1.21.1 : lithium=1.21.1__lithium-fabric-0.15.4+mc1.21.1.jar optifabric=OptiFabric-1.1.0+mc1.21.jar
+### 1.21.1 : NOTE OptiFabric has no build for this release; using OptiFabric-1.1.0+mc1.21.jar, which targets another release
+[patch-lithium] 1.21.1__lithium-fabric-0.15.4+mc1.21.1.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.1-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.1 : BUILT
+### 1.21.3 : lithium=1.21.3__lithium-fabric-0.14.6+mc1.21.3.jar optifabric=OptiFabric-1.1.2+mc1.21.3.jar
+[patch-lithium] 1.21.3__lithium-fabric-0.14.6+mc1.21.3.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.3-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.3 : BUILT
+### 1.21.4 : lithium=1.21.4__lithium-fabric-0.15.3+mc1.21.4.jar optifabric=OptiFabric-1.1.2+mc1.21.4.jar
+[patch-lithium] 1.21.4__lithium-fabric-0.15.3+mc1.21.4.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.4-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.4 : BUILT
+### 1.21.6 : lithium=1.21.6__lithium-fabric-0.17.0+mc1.21.6.jar optifabric=OptiFabric-1.1.2+mc1.21.6.jar
+[patch-lithium] 1.21.6__lithium-fabric-0.17.0+mc1.21.6.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.6-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.6 : BUILT
+### 1.21.7 : lithium=1.21.7__lithium-fabric-0.18.0+mc1.21.7.jar optifabric=OptiFabric-1.1.2+mc1.21.7.jar
+[patch-lithium] 1.21.7__lithium-fabric-0.18.0+mc1.21.7.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.7-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.7 : BUILT
+### 1.21.8 : lithium=1.21.8__lithium-fabric-0.18.1+mc1.21.8.jar optifabric=OptiFabric-1.1.2+mc1.21.8.jar
+[patch-lithium] 1.21.8__lithium-fabric-0.18.1+mc1.21.8.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.8-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.8 : BUILT
+### 1.21.9 : lithium=1.21.9__lithium-fabric-0.19.2+mc1.21.9.jar optifabric=OptiFabric-1.1.2+mc1.21.9.jar
+[patch-lithium] 1.21.9__lithium-fabric-0.19.2+mc1.21.9.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.9-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.9 : BUILT
+### 1.21.10 : lithium=1.21.10__lithium-fabric-0.20.1+mc1.21.10.jar optifabric=OptiFabric-1.1.2+mc1.21.10.jar
+[patch-lithium] 1.21.10__lithium-fabric-0.20.1+mc1.21.10.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.10-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.10 : BUILT
+### 1.21.11 : lithium=1.21.11__lithium-fabric-0.21.4+mc1.21.11.jar optifabric=OptiFabric-1.1.2+mc1.21.11.jar
+[patch-lithium] 1.21.11__lithium-fabric-0.21.4+mc1.21.11.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc1.21.11-patched.jar
+[patch-lithium] removed breaks: optifabric
+1.21.11 : BUILT
+### 26.1.2 : lithium=26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar optifabric=OptiFabric-Reforged-2.0.0+mc26.1.2.jar
+[patch-lithium] WARNING: none of optifabric_reforged were listed in 26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar's breaks; nothing to remove.
+[patch-lithium]          Breaking list present: optifabric
+[patch-lithium] 26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc26.1.2-patched.jar
+[patch-lithium] removed breaks: none
+26.1.2 : BUILT
+### sweep done

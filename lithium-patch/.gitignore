@@ -1,0 +1,19 @@
+# What this directory generates, and what it deliberately does not publish. See README section 10.1.
+#
+# Only the scripts, the documentation and the raw evidence are tracked. Everything below is either a build
+# product or a large local working tree, and each exclusion is deliberate rather than incidental.
+
+# The 16 patched jars (11 MB) and the matching reference .properties copies. Build products: they ship as
+# Release assets (tag lithium-patch-v1.0.0), and tools\sweep.ps1 rebuilds them byte for byte from upstream.
+out/
+
+# A ~23 GB working tree of Minecraft instances, worlds, downloaded assets and logs, created by
+# tools\launch-rig.ps1. Never tracked.
+work/
+
+# Upstream OptiFabric for 1.20 - 1.20.4, fetched from CurseForge. README 8.1 records its CurseForge project id
+# and its sha1/md5 so it can be re-fetched and verified; the upstream jar is not redistributed from here.
+thirdparty/
+
+# Ad-hoc mod staging for single launches.
+mods/

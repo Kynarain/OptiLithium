@@ -1,0 +1,9 @@
+﻿### sweep of 1 release(s)
+### 26.1.2 : lithium=26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar optifabric=OptiFabric-Reforged-2.0.0+mc26.1.2.jar
+[patch-lithium] baked into assets/lithium/lithium-mixin-config-default.properties : mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+[patch-lithium] reference copy for 26.1.2 -> I:\mods\lithium-patch\out\lithium-26.1.2.properties
+[patch-lithium] 26.1.2__lithium-fabric-0.24.7+mc26.1.2.jar -> I:\mods\lithium-patch\out\lithium-fabric-mc26.1.2-patched.jar
+[patch-lithium] removed breaks: optifabric
+[patch-lithium] mixin groups off by default: mixin.minimal_nonvanilla=false | mixin.util.inventory_comparator_tracking=false
+26.1.2-Fabric-0.19.5 : IN WORLD  prepared=567 / 0 failed  inWorld=yes  shaderpack=yes  programs=54  lithium=yes  crashes=0  threadErrors=0  disabledMixins=0  conflict=no  -
+### sweep done
